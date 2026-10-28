@@ -6,7 +6,7 @@ Run: SPLUNK_O11Y_TOKEN=... CHAOS=<war-room URL> python3 -I aitk-method-test.py [
 """
 import importlib.util, os, pathlib, subprocess, sys, time, urllib.request
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib"))
+sys.path.insert(0, str(HERE.parent.parent / "lib"))
 spec = importlib.util.spec_from_file_location("harness", HERE / "aitk-tuning.py")
 H = importlib.util.module_from_spec(spec); spec.loader.exec_module(H)
 

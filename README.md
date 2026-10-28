@@ -37,44 +37,59 @@ flowchart LR
   classDef d fill:#eef,stroke:#88a
 ```
 
-## What is in here
+## Quick start
 
-| Folder | What | Notes |
-|---|---|---|
-| `launchpad/` | Create and tune an **Agent Launchpad** agent: Observability Cloud MCP connection, Splunk MCP connection, the agent (hosted model or Anthropic), an alert that runs it, a tuning harness, side-by-side comparison and method tests | Python, talks to Splunk Web's REST API with `lib/stack.py` |
-| `agent-container/` | Our **own agent runtime inside an AITK container**: `| fit AITKContainer algo=tuktuk_sre` runs the agent (Claude with thinking, escalation, evidence checks, approval policy, optional sub-agent hypothesis tree) and returns the answer as search columns | Image based on `splunk/mltk-container-golden-cpu`; agent in a Python 3.11 venv |
-| `detection/` | **Anomaly detection that starts the agent**: the scheduled alert, the Infrastructure Monitoring add-on setup (`| sim flow`), live act tests, a model bake-off and the five **DSDL modules** (`modules/`) | Modules: `tuktuk_ecod`, `tuktuk_iforest`, `tuktuk_drift`, `tuktuk_seasonal`, `tuktuk_rules` |
-| `splunk-app/` | **TukTukPay SRE Agent** Splunk app: case list, conclusion card, Datadog-style hypothesis tree (tree / selected hypothesis), sub-agent timeline, evidence with links, agent trace | Custom HTML/JS view; read-only |
-| `docs/` | Write-up with architecture diagrams and results (`index.html`, published with GitHub Pages), the detection coverage plan, the sub-agent tree plan | |
-| `lib/stack.py` | Splunk Web session helper (form login, web-proxied REST, search) | env: `SPLUNK_WEB_URL`, `SPLUNK_CREDS_FILE`, `SPLUNK_VERIFY_TLS` |
+A working agent in about 30 minutes: **0 check → 1 tool connections → 2 agent → 3 ask it**, then optionally let
+alerts start it (4, 5). Scripts run on your laptop (Python 3.9+, standard library only) against Splunk Web's REST
+API, and every step is safe to re-run. Details and troubleshooting: **[GETTING_STARTED.md](GETTING_STARTED.md)**.
 
-## Requirements
+### Before you start (once, in Splunk Web)
 
-- Splunk Enterprise 10.x (or Splunk Cloud) with **AI Toolkit 6.2**, Python for Scientific Computing, **Splunk Cloud Connect** (Launchpad agents run in Splunk's cloud runtime), the **Splunk MCP Server** app, and the **Splunk Infrastructure Monitoring Add-on** for `| sim flow`.
-- Splunk Observability Cloud (APM, Kubernetes) and its MCP gateway.
-- Docker on a host the search head can reach, for the AITK containers.
-- An Anthropic API key for the container agent (optional for Launchpad, which can use Splunk-hosted models).
+- **AI Toolkit 6.2+** with Python for Scientific Computing, and **Splunk Cloud Connect** linked to a Splunk Cloud tenant (Launchpad agents run in Splunk's cloud runtime).
+- An **LLM connection** (AI Toolkit → Connections → + Connection): Splunk-hosted GPT-OSS 120B, or Anthropic **Claude Sonnet 4.5** — *not* Claude 5.5, which Launchpad's runtime cannot call.
+- Role **`mltk_admin`** on your user; an **Observability Cloud API token**.
+- Recommended: the **Splunk MCP Server** app with a token for a read-only user (gives the agent your logs). Step 5 also needs the **Infrastructure Monitoring Add-on**.
 
-Credentials are never in this repo: scripts read a credentials file (`SPLUNK_CREDS_FILE`) and tokens from the environment (`SPLUNK_O11Y_TOKEN`, `ANTHROPIC_API_KEY`). Container secrets go in an env file outside the image.
-
-## Quick start (outline)
+### 1. Configure
 
 ```bash
-export SPLUNK_WEB_URL=https://splunk.example.com:8000 SPLUNK_CREDS_FILE=~/.splunk_creds SPLUNK_O11Y_TOKEN=...
-# 1. Launchpad agent with Observability Cloud + Splunk MCP tools
-python3 -I launchpad/setup-aitk-o11y-mcp.py && python3 -I launchpad/setup-aitk-splunk-mcp.py && python3 -I launchpad/setup-aitk-agent.py
-# 2. Detection modules (build on the Docker host), register the container in AITK, train, then the alert
-docker build -t anomaly-aitk detection/modules
-docker run --rm --network none -v $PWD/detection/modules:/work:ro --entrypoint python3 anomaly-aitk /work/tests/test_coverage.py
-python3 -I detection/setup-ml-anomaly-alert.py          # created disabled; `enable` when tested
-# 3. Own agent in a container (optional)
-docker build -t sre-agent-aitk -f agent-container/aitk-container/Dockerfile agent-container
-# 4. The Splunk app
-tar --no-xattrs -czf sre-app.tgz -C splunk-app tuktukpay_sre_agent && splunk-app/install-sre-app.sh sre-app.tgz
+git clone https://github.com/khsydney/splunk-aitk-launchpad-sre-agent.git && cd splunk-aitk-launchpad-sre-agent
+cp config.env.example config.env                       # then edit it (git-ignored)
+printf 'admin\nYOUR_PASSWORD\n' > ~/.splunk_creds && chmod 600 ~/.splunk_creds
+printf 'YOUR_O11Y_API_TOKEN\n'  > ~/.o11y_token    && chmod 600 ~/.o11y_token
 ```
 
-Most scripts are one-off and idempotent; read each file's header first. Environment names (`tuktukpay-demo`), service
-names and the call graph are those of the lab — change them for your platform.
+Set at least `SPLUNK_WEB_URL`, `O11Y_REALM`, `O11Y_ENVIRONMENT`, `LOG_INDEX`, `LLM_CONNECTION` / `LLM_PROVIDER` /
+`LLM_MODEL` (exactly as on your LLM connection) and `AGENT_NAME` (letters and digits only).
+
+### 2. Run the steps
+
+| Step | Command | You should see |
+|---|---|---|
+| **0 · Check** | `python3 quickstart/00_check.py` | every line ✓ — each ✗ prints its fix |
+| **1 · Tools** | `python3 quickstart/01_mcp_connections.py` | `✓ created o11y_cloud with 41 tools` (+ `splunk_logs` if configured) |
+| **2 · Agent** | `python3 quickstart/02_agent.py` | `✓ created agent SREAgent: 15 tools …` · `✓ agent is Available` |
+| **3 · Ask it** | `python3 quickstart/03_ask_agent.py "Why is checkout slow?"` | the answer, its tool calls and the time (1–5 min) |
+| 4 · Detector alerts → agent *(optional)* | `python3 quickstart/04_alert.py` then `--enable` | alert saved DISABLED; detector alerts found in your index |
+| 5 · ML anomalies → agent *(optional)* | `python3 quickstart/05_ml_detection.py account` · `train 24` · `alert` · `enable` | `| sim flow` returns data; 3 models trained; alert saved |
+
+Step 4 needs an Observability Cloud **Splunk platform** notification integration sending detector alerts to your
+Splunk (HEC). Step 5 trains on hours you know were **normal**.
+
+Tested end to end on Splunk Enterprise 10.6 with AI Toolkit 6.2 (28 Oct 2026): the test agent answered a health check
+in 56 s with live numbers and no failed tool calls.
+
+## What is in here
+
+| Folder | What |
+|---|---|
+| `quickstart/` | **The supported path**: numbered steps driven by `config.env`, each one idempotent and checked |
+| `agent-container/` | Our **own agent runtime inside an AI Toolkit container** (`| fit AITKContainer algo=tuktuk_sre`): Claude Sonnet/Opus 5.5 with thinking, escalation, evidence checks, approval policy, optional sub-agent hypothesis tree |
+| `detection-modules/` | Five **anomaly detectors as AI Toolkit container modules** (ECOD, drift and time-to-limit, hour-of-day baseline, statistical rules, Isolation Forest) with a coverage test of 11 fault types |
+| `splunk-app/` | **TukTukPay SRE Agent** Splunk app: case list, conclusion card, hypothesis tree, sub-agent timeline, evidence, agent trace |
+| `docs/` | Write-up with diagrams and results — published at https://khsydney.github.io/splunk-aitk-launchpad-sre-agent/ |
+| `research/` | The original lab scripts (dated, tied to the lab environment): tuning harness, method tests, act tests, model bake-off |
+| `lib/` | `stack.py` (Splunk Web session + REST + search), `config.py` (reads `config.env`), `mcp.py` (minimal MCP client) |
 
 ## Results from the lab (simulated faults)
 
@@ -96,7 +111,7 @@ on the same data, ECOD, COPOD and One-Class SVM reached 1.4 false alarms/day aga
 best origin ranker was the call graph + ECOD score (origin ranked first in 6 of 8). A coverage test with 11 injected
 fault types (spikes, slow ramps, memory leaks, level shifts, daily-pattern breaks, decoupled signals, quiet-service
 errors, new error types, business ratios, silence, restarts) is caught by the five modules with 0 false alarms on a
-clean day (`detection/modules/tests/test_coverage.py`).
+clean day (`detection-modules/tests/test_coverage.py`).
 
 ## Things we learned about the platform
 

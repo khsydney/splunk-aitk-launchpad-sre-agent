@@ -8,7 +8,7 @@ Run:  python3 -I setup-aitk-splunk-mcp.py
 """
 import json, pathlib, sys
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib"))
+sys.path.insert(0, str(HERE.parent.parent / "lib"))
 from stack import S, BASE  # noqa: E402
 
 NAME = "splunk_ec2_logs"

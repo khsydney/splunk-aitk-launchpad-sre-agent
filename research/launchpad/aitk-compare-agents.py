@@ -6,7 +6,7 @@ Run: SPLUNK_O11Y_TOKEN=... python3 -I aitk-compare-agents.py <act> [--detector <
 """
 import json, os, pathlib, sys, threading, time
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib")); sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent.parent / "lib")); sys.path.insert(0, str(HERE))
 from stack import S, BASE  # noqa: E402
 import importlib.util
 spec = importlib.util.spec_from_file_location("harness", HERE / "aitk-tuning.py")

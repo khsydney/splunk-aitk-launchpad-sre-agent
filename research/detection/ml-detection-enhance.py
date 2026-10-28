@@ -16,7 +16,7 @@ Run: CHAOS=<war-room URL> python3 -I ml-detection-enhance.py <timeline.json>
 import calendar, json, os, pathlib, sys, time, urllib.request
 from collections import defaultdict
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib"))
+sys.path.insert(0, str(HERE.parent.parent / "lib"))
 from stack import S  # noqa: E402
 
 tl = json.loads(pathlib.Path(sys.argv[1]).read_text())

@@ -9,7 +9,7 @@ Run: CHAOS=<war-room URL> python3 -I ml-bakeoff-export.py <out dir> [hours back,
 import calendar, csv, json, os, pathlib, sys, time, urllib.request
 from collections import defaultdict
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib"))
+sys.path.insert(0, str(HERE.parent.parent.parent / "lib"))
 from stack import S  # noqa: E402
 
 OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)

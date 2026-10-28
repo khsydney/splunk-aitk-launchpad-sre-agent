@@ -11,7 +11,7 @@ Run with and SPLUNK_O11Y_TOKEN set.
 """
 import json, os, pathlib, sys, time, urllib.request
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "lib"))
+sys.path.insert(0, str(HERE.parent.parent / "lib"))
 from stack import S, BASE  # noqa: E402
 
 A = BASE + "/en-US/splunkd/__raw/servicesNS/admin/Splunk_ML_Toolkit/mltk/"

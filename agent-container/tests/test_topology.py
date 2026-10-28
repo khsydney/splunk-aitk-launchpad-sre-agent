@@ -67,6 +67,7 @@ def test_edges_from_dependencies_fold_inferred_nodes_and_drop_others():
     assert topology.edges_from_dependencies("checkout-api", payload) == {("checkout-api", "ledger"), ("checkout-api", "payment-router")}
 
 
+@pytest.mark.skipif(not any(FIXTURES.glob("*.json")), reason="recorded eval fixtures are not in this repo")
 def test_fetch_graph_uses_the_service_map_and_caches_it(fresh_cache):
     m = FixtureMCP()
     g = topology.fetch_graph(m, now=1000.0)
@@ -194,7 +195,7 @@ def test_dismissed_tie_stays_dismissed(state):
     up = _case("checkout-api p90 latency above 1s", "I1", state="proposed", age_s=60)
     down = _case("ledger p90 latency above 400ms", "I2")
     ties.record_ties(down, topology.static_graph())
-    assert ties.dismiss(down["id"], up["id"], "nick@console")[0] == 200
+    assert ties.dismiss(down["id"], up["id"], "sre@console")[0] == 200
     again = cs.load(down["id"])
     ties.record_ties(again, topology.static_graph())
     assert again["ties"][up["id"]]["status"] == "dismissed" and cs.load(up["id"])["ties"][down["id"]]["status"] == "dismissed"
@@ -204,13 +205,13 @@ def test_merge_moves_alerts_and_closes_the_other_case(state):
     up = _case("checkout-api p90 latency above 1s", "I1", state="proposed", age_s=60)
     down = _case("ledger p90 latency above 400ms", "I2", state="proposed")
     ties.record_ties(down, topology.static_graph())
-    code, out = ties.merge(down["id"], up["id"], "nick@console")
+    code, out = ties.merge(down["id"], up["id"], "sre@console")
     assert code == 200, out
     t, s = cs.load(down["id"]), cs.load(up["id"])
     assert [i["incident_id"] for i in t["incidents"]] == ["I2", "I1"] and t["incidents"][1]["joined"]["rule"] == "merged"
     assert t["ties"][up["id"]]["status"] == "merged" and s["state"] == "closed" and s["merged_into"] == down["id"]
     assert ties.find_ties(t, cs.list_cases(), topology.static_graph()) == []   # a merged case is never suggested again
-    assert ties.merge(down["id"], up["id"], "nick@console") == (200, {"ok": True, "case_id": down["id"], "note": "already merged"})
+    assert ties.merge(down["id"], up["id"], "sre@console") == (200, {"ok": True, "case_id": down["id"], "note": "already merged"})
     assert cs.load(down["id"])["merged_from"] == [up["id"]]
 
 
@@ -290,7 +291,7 @@ def test_view_collapses_refires_shows_firing_state_and_offers_unowned_alerts(sta
 def test_attach_adds_the_alert_with_its_path_and_refuses_busy_cases(state):
     g = topology.static_graph()
     c = _case("checkout-api p90 latency above 1s", "I1", state="proposed")
-    code, out = ties.attach(c["id"], _live("payment-router error rate above 5%", "I2"), g, "nick@console")
+    code, out = ties.attach(c["id"], _live("payment-router error rate above 5%", "I2"), g, "sre@console")
     assert code == 200, out
     t = cs.load(c["id"])
     assert t["incidents"][1]["joined"]["rule"] == "added" and t["incidents"][1]["joined"]["path"] == ["checkout-api", "payment-router"]
@@ -304,9 +305,9 @@ def test_merge_records_who_and_when_and_flags_alerts_the_brief_has_not_seen(stat
     down = _case("ledger p90 latency above 400ms", "I2", state="proposed")
     d = cs.load(down["id"]); d["investigation"] = {"root_cause_service": "ledger"}; cs.save(d)
     ties.record_ties(cs.load(down["id"]), topology.static_graph())
-    assert ties.merge(down["id"], up["id"], "nick@console")[0] == 200
+    assert ties.merge(down["id"], up["id"], "sre@console")[0] == 200
     s, t = cs.load(up["id"]), cs.load(down["id"])
-    assert s["merged_by"] == "nick@console" and s["merged_at"].endswith("Z") and t["incidents"][1]["joined"]["at"] == s["merged_at"]
+    assert s["merged_by"] == "sre@console" and s["merged_at"].endswith("Z") and t["incidents"][1]["joined"]["at"] == s["merged_at"]
     assert t["unreviewed_alerts"] == [PFX + "checkout-api p90 latency above 1s"]
     assert ties.view(s, [], topology.static_graph()) == {"cases": [], "alerts": [], "graph": "static"}   # merged case: no tie buttons
 

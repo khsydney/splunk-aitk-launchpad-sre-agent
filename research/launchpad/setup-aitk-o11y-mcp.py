@@ -10,7 +10,7 @@ SPLUNK_O11Y_TOKEN environment variable and is never printed. Needs the admin use
 Run:  python3 -I setup-aitk-o11y-mcp.py
 """
 import json, os, pathlib, sys
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent / "lib"))
 from stack import S, BASE  # noqa: E402
 
 NAME = "o11y_cloud_us1"

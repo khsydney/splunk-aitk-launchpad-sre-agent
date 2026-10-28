@@ -5,7 +5,7 @@ read-only). The agent runs in Splunk's cloud runtime (AWS AgentCore). Idempotent
 Run:  python3 -I setup-aitk-agent.py
 """
 import json, pathlib, sys
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent / "lib"))
 from stack import S, BASE  # noqa: E402
 
 NS = BASE + "/en-US/splunkd/__raw/servicesNS/admin/Splunk_ML_Toolkit/mltk/"

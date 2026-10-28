@@ -6,7 +6,7 @@ The token comes from $SPLUNK_O11Y_TOKEN and travels only in the request body. Th
 Run: SPLUNK_O11Y_TOKEN=... python3 -I setup-sim-addon.py
 """
 import json, os, pathlib, sys, urllib.parse, urllib.request
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent / "lib"))
 from stack import S, BASE  # noqa: E402
 
 ORG_ID, ORG_NAME, REALM = "YOUR_ORG_ID", "your Observability Cloud org", "us1"

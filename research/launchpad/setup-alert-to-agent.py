@@ -8,7 +8,7 @@ Idempotent: updates the search if it exists.
 Run:  python3 -I setup-alert-to-agent.py
 """
 import json, pathlib, sys, urllib.parse
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent / "lib"))
 from stack import S  # noqa: E402
 
 NAME = "TukTukPay - Observability Cloud alert runs TukTukPaySRE"

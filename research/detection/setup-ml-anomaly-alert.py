@@ -12,7 +12,7 @@ One row per run listing every flagged service (earliest first), so one fault = o
 Run with TUKTUK_STACK=ec2.
 """
 import json, pathlib, sys, urllib.parse
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "lib"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent.parent / "lib"))
 from stack import S  # noqa: E402
 
 NAME = "TukTukPay - ML anomaly runs TukTukPaySRE"

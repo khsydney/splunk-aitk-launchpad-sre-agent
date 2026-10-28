@@ -57,8 +57,11 @@ class Stack:
         t0 = time.time()
         while time.time() - t0 < wait:
             st, body = self.get(f"/services/search/jobs/{sid}")
-            if json.loads(body)["entry"][0]["content"].get("isDone"):
-                break
+            try:
+                if json.loads(body)["entry"][0]["content"].get("isDone"):
+                    break
+            except (ValueError, KeyError, IndexError):   # transient non-JSON reply while a long search runs: poll again
+                pass
             time.sleep(2)
         st, body = self.get(f"/services/search/jobs/{sid}/results", count=0)
         d = json.loads(body) if st == 200 else {}
