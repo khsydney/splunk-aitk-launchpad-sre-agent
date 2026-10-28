@@ -9,5 +9,5 @@ file next to the script, and the agent package in `agent-container/`. Read each 
 | Folder | What |
 |---|---|
 | `launchpad/` | first agent and MCP connection setup, the tuning harness (`aitk-tuning.py`), side-by-side agent comparison, the hypothesis-tree method test |
-| `detection/` | the first ML anomaly alert, the Infrastructure Monitoring add-on setup, the live act test, the enhancement test, and the model bake-off (`bakeoff/`) |
+| `detection/` | the first ML anomaly alert, the Infrastructure Monitoring add-on setup, the live act test, the enhancement test, the model bake-off (`bakeoff/`), and the detection-module pipeline: `setup-detect-modules.py` (feature table, training, scoring, alert) and `detect-replay-eval.py` (offline replay of the alert) |
 | `agent-container/` | the live test of the container agent, single loop vs. sub-agent tree |

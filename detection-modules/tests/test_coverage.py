@@ -77,7 +77,19 @@ SIGNALS = ["t", "svc", "bad", "errs", "total", "reqs", "restarts", "apm_err_pct"
 param = {"options": {"params": {}}}
 
 
+def spl_fill(df):
+    """What the alert's SPL sends: empty numbers as -1, no events as "-" (the toolkit drops rows with empty fields)."""
+    d = df.copy()
+    for c in d.columns:
+        if c == "events":
+            d[c] = d[c].fillna("-")
+        elif c != "svc":
+            d[c] = d[c].fillna(-1)
+    return d
+
+
 def run(name, mod, df_train, df_test):
+    df_train, df_test = spl_fill(df_train), spl_fill(df_test)
     cols = None if name == "rules" else [c for c in SIGNALS if c in df_train]
     m = mod.init(df_train, param); mod.fit(m, df_train if cols is None else df_train[cols], param)
     return mod.apply(m, df_test if cols is None else df_test[cols], param)
@@ -116,5 +128,15 @@ print(f"\nsingle harmless warning on the quiet service → rules flag: {'YES (ba
 ok &= not len(single)
 for name, n in fa.items():
     ok &= n <= 3
+# the toolkit joins output to input by position: every module must answer in the input's row order
+shuffled = day3.sample(frac=1, random_state=5).head(2000).reset_index(drop=True)
+for name, mod in MODS.items():
+    m = mod.init(train, param)
+    cols = None if name == "rules" else [c for c in SIGNALS if c in train]
+    mod.fit(m, train if cols is None else train[cols], param)
+    r = mod.apply(m, shuffled if cols is None else shuffled[cols], param)
+    same = len(r) == len(shuffled) and (r.svc.values == shuffled.svc.astype(str).values).all() and (r.t.values == shuffled.t.values).all()
+    print(f"{name:9} output in input order: {'yes' if same else 'NO'}")
+    ok &= bool(same)
 print("\nRESULT:", "PASS" if ok else "FAIL")
 sys.exit(0 if ok else 1)

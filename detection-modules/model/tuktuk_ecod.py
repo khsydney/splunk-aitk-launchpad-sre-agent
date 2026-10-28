@@ -41,7 +41,7 @@ def apply(model, df, param):
         flags = C.consecutive(norm > 1, k)
         for t, sc_, z, flag in zip(g["t"], norm, Z, flags):
             rows.append((t, svc, NAME, sc_, flag, C.top_reasons(z, mm["cols"]) if flag else ""))
-    return C.result(rows)
+    return C.result(rows, df)
 
 
 def save(model, name):
@@ -53,4 +53,4 @@ def load(name):
 
 
 def summary(model=None):
-    return {"version": {"tuktuk_ecod": "2026-10-28"}, "summary": f"ECOD per service; {len((model or {}).get('models', {}))} services"}
+    return {"version": {"tuktuk_ecod": "2026-10-28i"}, "summary": f"ECOD per service; {len((model or {}).get('models', {}))} services"}

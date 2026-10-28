@@ -25,6 +25,10 @@ def params(param):
 def prepare(df):
     """Numeric signals, sorted by service and time; missing counts = 0, missing gauges carried forward."""
     d = df.copy()
+    # the toolkit drops any row with an empty field, so the SPL fills empty numbers with -1 (never a real value here)
+    for c in SIGNAL_COLS + ["ok", "dec", "mv", "mb"]:
+        if c in d:
+            d[c] = pd.to_numeric(d[c], errors="coerce").where(lambda v: v != -1)
     d["t"] = pd.to_numeric(d["t"], errors="coerce")
     d["svc"] = d["svc"].astype(str)
     for c in SIGNAL_COLS:
@@ -69,6 +73,13 @@ class Scaler:
         return ((X - self.med) / self.sd).values
 
 
+def spread(med, sd, count=False):
+    """A spread that cannot be ~0: a signal that sat constant in training (an idle service) otherwise gives z of 1e14.
+    Counts are compared as log1p, where 0.05 is about a 5 % change (Poisson noise at 300/min); gauges get 5 % of their median."""
+    sd = float(sd) if np.isfinite(sd) else 0.0
+    return max(sd, 0.05) if count else max(sd, 0.05 * abs(float(med)), 1e-3)
+
+
 def usable_cols(g):
     cols = [c for c in SIGNAL_COLS if c in g and g[c].notna().sum() > 0]
     return cols + [d for d, (a, b) in DERIVED.items() if a in cols and b in cols and g[b].sum() > 0]
@@ -80,8 +91,18 @@ def top_reasons(z, cols, n=2, min_z=3.0):
     return ", ".join(out)
 
 
-def result(rows):
+def result(rows, df=None):
+    """Result rows; with df (the input), one row per input row in the input's order: the toolkit joins the output to
+    the input by position, so sorted output would put each score on the wrong row. Rows a module skipped score 0."""
     out = pd.DataFrame(rows, columns=["t", "svc", "detector", "score", "flag", "reason"])
+    if df is not None:
+        key = pd.DataFrame({"t": pd.to_numeric(df["t"], errors="coerce").values, "svc": df["svc"].astype(str).values})
+        out["t"] = pd.to_numeric(out["t"], errors="coerce")
+        out = key.merge(out.drop_duplicates(["t", "svc"], keep="last"), on=["t", "svc"], how="left")
+        out["detector"] = out["detector"].fillna(rows[0][2] if rows else "")
+        out["score"] = out["score"].fillna(0.0)
+        out["flag"] = out["flag"].fillna(0)
+        out["reason"] = out["reason"].fillna("")
     if len(out):
         out["score"] = out["score"].astype(float).round(3)
         out["flag"] = out["flag"].astype(int)

@@ -89,7 +89,7 @@ def apply(model, df, param):
                 cands.append((1.0 + float(r["restarts"]), f"{int(r['restarts'])} container restart(s)"))
             best = max(cands, key=lambda x: x[0]) if cands else (0.0, "")
             rows.append((r["t"], svc, NAME, best[0], best[0] >= 1, best[1]))
-    return C.result(rows)
+    return C.result(rows, df)
 
 
 def save(model, name):
@@ -101,4 +101,4 @@ def load(name):
 
 
 def summary(model=None):
-    return {"version": {"tuktuk_rules": "2026-10-28"}, "summary": f"rules for {len((model or {}).get('svc', {}))} services"}
+    return {"version": {"tuktuk_rules": "2026-10-28i"}, "summary": f"rules for {len((model or {}).get('svc', {}))} services"}

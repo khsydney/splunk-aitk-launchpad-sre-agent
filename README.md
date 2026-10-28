@@ -85,7 +85,7 @@ in 56 s with live numbers and no failed tool calls.
 |---|---|
 | `quickstart/` | **The supported path**: numbered steps driven by `config.env`, each one idempotent and checked |
 | `agent-container/` | Our **own agent runtime inside an AI Toolkit container** (`| fit AITKContainer algo=tuktuk_sre`): Claude Sonnet/Opus 5.5 with thinking, escalation, evidence checks, approval policy, optional sub-agent hypothesis tree |
-| `detection-modules/` | Five **anomaly detectors as AI Toolkit container modules** (ECOD, drift and time-to-limit, hour-of-day baseline, statistical rules, Isolation Forest) with a coverage test of 11 fault types |
+| `detection-modules/` | Five **anomaly detectors as AI Toolkit container modules** (ECOD, drift and time-to-limit, hour-of-day baseline, statistical rules, Isolation Forest) with a coverage test of 11 fault types; `research/detection/setup-detect-modules.py` builds the feature table, trains them and creates the alert |
 | `splunk-app/` | **TukTukPay SRE Agent** Splunk app: case list, conclusion card, hypothesis tree, sub-agent timeline, evidence, agent trace |
 | `docs/` | Write-up with diagrams and results — published at https://khsydney.github.io/splunk-aitk-launchpad-sre-agent/ |
 | `research/` | The original lab scripts (dated, tied to the lab environment): tuning harness, method tests, act tests, model bake-off |
@@ -108,10 +108,23 @@ single loop; the tree is available per call (`method="tree"`).
 
 **Detection**: the live alert flagged all 8 lab faults within the first minute (detectors 24–181 s later). In a bake-off
 on the same data, ECOD, COPOD and One-Class SVM reached 1.4 false alarms/day against 24 for per-signal thresholds; the
-best origin ranker was the call graph + ECOD score (origin ranked first in 6 of 8). A coverage test with 11 injected
-fault types (spikes, slow ramps, memory leaks, level shifts, daily-pattern breaks, decoupled signals, quiet-service
-errors, new error types, business ratios, silence, restarts) is caught by the five modules with 0 false alarms on a
-clean day (`detection-modules/tests/test_coverage.py`).
+best origin ranker was the call graph + ECOD score (origin ranked first in 6 of 8).
+
+Five **detection modules** (`detection-modules/`) then covered what ECOD misses. A synthetic test with 11 fault types
+(spikes, slow ramps, memory leaks, level shifts, daily-pattern breaks, decoupled signals, quiet-service errors, new error
+types, business ratios, silence, restarts) catches every one, with 0 false alarms on a clean day
+(`detection-modules/tests/test_coverage.py`). **Real data was harder.** We replayed 30 hours of the lab (19 fault runs;
+1,074 clean minutes for training, 493 later clean minutes held out) through the module container (`research/detection/`):
+
+| Modules in the alert | Faults that started the agent | Origin named right | False agent runs, training / held-out minutes |
+|---|---|---|---|
+| all five | 13 of 19 | 12 of 13 | 5 / 11 (32/day held-out) |
+| **ECOD + rules + hour-of-day baseline** (the alert) | **15 of 19** | **15 of 15** | **0 / 4** (12/day held-out) |
+| ECOD alone | 15 of 19 | 5 of 15 | 0 / 4 |
+
+The 4 faults without a run came within 30 minutes of an earlier fault with the same origin (the per-origin throttle).
+Drift and Isolation Forest stay trained but are left out of the alert: on real signals they produced most of the false
+alarms. That means slow faults (latency ramps, memory creeping to the limit) are not covered by the alert yet.
 
 ## Things we learned about the platform
 

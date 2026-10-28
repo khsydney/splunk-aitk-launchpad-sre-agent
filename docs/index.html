@@ -78,7 +78,7 @@ a{color:var(--accent)}
   <div class="eyebrow">TukTukPay · workshop war room · AI (artificial intelligence) Toolkit research · 28 Oct 2026</div>
   <h1>Where should the SRE agent run?</h1>
   <p class="lede">Three ways to run an LLM (large language model) SRE (site reliability engineering) agent from Splunk's AI Toolkit were built and tested on the TukTukPay EC2 (Elastic Compute Cloud) Splunk against live failure scenarios. One runs the agent we wrote, with Claude Opus 5.5, from a single line of SPL (Search Processing Language).</p>
-  <p class="small">New on 28 Oct: <a href="#coverage">five detection modules that cover what ECOD misses</a>, and the whole agent as a <a href="#get-it">public GitHub repository with a step-by-step quick start</a>.</p>
+  <p class="small">New on 28 Oct: <a href="#coverage">five detection modules that cover what ECOD misses</a>, <a href="#real-data">trained and replayed on real data</a>, and the whole agent as a <a href="#get-it">public GitHub repository with a step-by-step quick start</a>.</p>
 </header>
 
 <section>
@@ -743,20 +743,20 @@ H4 saturation … ~ inconclusive (not corroborated by a log signal)</pre>
 <div class="tbl"><table>
   <thead><tr><th>Injected fault</th><th>Why ECOD alone misses it</th><th>ECOD</th><th>IF</th><th>Drift</th><th>Seasonal</th><th>Rules</th></tr></thead>
   <tbody>
-    <tr><td>Sudden spike across several signals</td><td class="small">— (ECOD's strength)</td><td class="part">●</td><td></td><td></td><td></td><td class="part">●</td></tr>
-    <tr><td>Slow latency ramp (+60 % over 90 min (minutes))</td><td class="small">judges each minute alone; a slow climb looks normal</td><td></td><td></td><td class="part">●</td><td></td><td></td></tr>
-    <tr><td>Memory leak toward the limit</td><td class="small">same; no idea of a limit</td><td></td><td></td><td class="part">●</td><td></td><td></td></tr>
-    <tr><td>Lasting level shift (+25 % latency)</td><td class="small">after a few minutes the new level looks ordinary</td><td></td><td></td><td class="part">●</td><td></td><td></td></tr>
-    <tr><td>Traffic drop at the busy hour</td><td class="small">no notion of time of day</td><td></td><td></td><td></td><td class="part">●</td><td></td></tr>
-    <tr><td>Logs decouple from traffic</td><td class="small">each signal is normal on its own</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td><td class="yes">✓</td><td></td></tr>
-    <tr><td>12 errors a minute on a quiet service</td><td class="small">a quiet service's normal is zero</td><td class="part">●</td><td></td><td></td><td></td><td class="part">●</td></tr>
-    <tr><td>A new error type</td><td class="small">never seen in training, so no score</td><td></td><td></td><td></td><td></td><td class="part">●</td></tr>
-    <tr><td>Decline share jumps to 25 %</td><td class="small">only sees the ratio if it is an input</td><td class="part">●</td><td></td><td></td><td></td><td class="part">●</td></tr>
-    <tr><td>A service goes silent</td><td class="small">no rows, nothing to score</td><td></td><td class="yes">✓</td><td></td><td class="part">●</td><td class="part">●</td></tr>
-    <tr><td>A container restart</td><td class="small">sparse single spike</td><td></td><td></td><td></td><td></td><td class="part">●</td></tr>
+    <tr><td>Sudden spike across several signals</td><td class="small">— (ECOD's strength)</td><td class="num"><span class="yes">1 min</span></td><td class="num"><span class="yes">1 min</span></td><td class="num"><span class="yes">4 min</span></td><td class="num"><span class="yes">1 min</span></td><td class="num"><span class="yes">0 min</span></td></tr>
+    <tr><td>Slow latency ramp (+60 % over 90 min (minutes))</td><td class="small">judges each minute alone; a slow climb looks normal</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">24 min</span></td><td class="num"><span class="yes">46 min</span></td><td class="num small">·</td></tr>
+    <tr><td>Memory leak toward the limit</td><td class="small">same; no idea of a limit</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">7 min</span></td><td class="num small">·</td><td class="num small">·</td></tr>
+    <tr><td>Lasting level shift (+25 % latency)</td><td class="small">after a few minutes the new level looks ordinary</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">7 min</span></td><td class="num small">·</td><td class="num small">·</td></tr>
+    <tr><td>Traffic drop at the busy hour</td><td class="small">no notion of time of day</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">29 min</span></td><td class="num"><span class="yes">1 min</span></td><td class="num small">·</td></tr>
+    <tr><td>Logs decouple from traffic</td><td class="small">each signal is normal on its own</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">1 min</span></td><td class="num small">·</td></tr>
+    <tr><td>12 errors a minute on a quiet service</td><td class="small">a quiet service's normal is zero</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">1 min</span></td><td class="num"><span class="yes">0 min</span></td></tr>
+    <tr><td>A new error type</td><td class="small">never seen in training, so no score</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">0 min</span></td></tr>
+    <tr><td>Decline share jumps to 25 %</td><td class="small">only sees the ratio if it is an input</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">0 min</span></td></tr>
+    <tr><td>A service goes silent</td><td class="small">no rows, nothing to score</td><td class="num small">·</td><td class="num"><span class="yes">2 min</span></td><td class="num small">·</td><td class="num"><span class="yes">1 min</span></td><td class="num"><span class="yes">2 min</span></td></tr>
+    <tr><td>A container restart</td><td class="small">sparse single spike</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num small">·</td><td class="num"><span class="yes">0 min</span></td></tr>
   </tbody>
 </table></div>
-<p class="small col">● the module built for that case · ✓ / ✗ recorded result for that module. Offline test in the container image with no network (28 Oct): 2 days of synthetic baseline with a daily traffic curve to train, 1 day with the 11 faults injected, and 1 clean day. <b>Result: pass.</b> One of the intended modules caught every fault, no module raised a false alarm on the clean day, and a single harmless warning on a quiet service raised nothing. IF = Isolation Forest.</p>
+<p class="small col">Minutes from the start of the fault to the module's first flag; · = not caught. Offline test in the container image with no network (28 Oct, final image): 2 days of synthetic baseline with a daily traffic curve to train, 1 day with the 11 faults injected, and 1 clean day. <b>Result: pass.</b> Every fault was caught by a module built for it, no module raised a false alarm on the clean day, a single harmless warning on a quiet service raised nothing, and every module returns its rows in the input's order (the toolkit joins results by position). IF = Isolation Forest.</p>
 
 <div class="two">
 <div>
@@ -771,13 +771,36 @@ H4 saturation … ~ inconclusive (not corroborated by a log signal)</pre>
 <div>
 <h3>Still open</h3>
 <ul>
-  <li><b>Not yet live.</b> The modules have been tested only on synthetic data. Next: run the container beside the agent container, train on real quiet hours, create the new alert disabled, replay the acts, then switch over and retire the three DensityFunction models.</li>
+  <li><b>Slow faults are not in the alert yet.</b> Only drift catches latency ramps, memory creeping to the limit and lasting shifts, and on real signals drift raised most of the false alarms (below).</li>
   <li>Planned changes (deploys, load tests) need suppression windows in the alert.</li>
-  <li>Daily and weekly patterns need weeks of history for Prophet. Until then, an hour-of-day baseline.</li>
+  <li>Daily and weekly patterns need weeks of history for Prophet. Until then, an hour-of-day baseline that has seen each hour about once.</li>
   <li>Faults outside these signals, such as a partner outage that shows only as declines, still need Observability Cloud detectors and service-level objectives.</li>
 </ul>
 </div>
 </div>
+
+<h3 id="real-data">Tested on real data: what changed</h3>
+<div class="col">
+<p>On 28 Oct the modules went live in their own container (<code>tuktuk-detect</code>, beside the agent container, localhost only) and were trained on the lab's real signals. One SPL (Search Processing Language) search builds a per-minute table for every service from the logs, APM (Application Performance Monitoring) through <code>| sim flow</code>, container memory and restarts, and the checkout payment events. We trained on 1,074 clean minutes, then replayed 30 hours of the lab, 19 fault runs, plus 493 later clean minutes the models had not seen, through an exact copy of the alert logic.</p>
+<p>The synthetic test had not found five problems. All five are fixed:</p>
+<ul>
+  <li>The toolkit <b>drops every row with an empty field</b> before it reaches the container. Every row in this table has one, so the first training received 0 rows. Empty values are now sent as -1, and the modules read -1 as missing.</li>
+  <li>The toolkit <b>joins results to rows by position</b>. The modules sorted rows by service, which put scores on the wrong rows.</li>
+  <li>Log rows and <code>| sim flow</code> rows carry <b>different time formats</b>, so each minute came in as two half-empty rows.</li>
+  <li>A signal that sat <b>constant during training</b> (an idle service) produced z-scores of 10<sup>14</sup>. Spreads now have a floor.</li>
+  <li>The <b>CUSUM (cumulative sum) level-shift test</b> fired on 14 % of clean service-minutes, even after calibrating it per signal, because real signals wander (memory creeps, latency follows load). It is now off by default. Traffic is flagged only when it drops: the surges came from people using the agent console.</li>
+</ul>
+</div>
+<div class="tbl"><table>
+  <thead><tr><th>Modules in the alert</th><th>Faults that started the agent</th><th>Origin named right</th><th>False runs, training minutes</th><th>False runs, held-out minutes</th></tr></thead>
+  <tbody>
+    <tr><td>all five</td><td class="num">13 / 19</td><td class="num">12 / 13</td><td class="num">5</td><td class="num"><span class="no">11 (32 a day)</span></td></tr>
+    <tr><td>ECOD + rules + seasonal + drift</td><td class="num">14 / 19</td><td class="num">13 / 14</td><td class="num">2</td><td class="num">6 (18 a day)</td></tr>
+    <tr><td><b>ECOD + rules + seasonal</b> (the alert)</td><td class="num"><b>15 / 19</b></td><td class="num"><span class="yes">15 / 15</span></td><td class="num"><span class="yes">0</span></td><td class="num">4 (12 a day)</td></tr>
+    <tr><td>ECOD alone</td><td class="num">15 / 19</td><td class="num"><span class="no">5 / 15</span></td><td class="num">0</td><td class="num">4 (12 a day)</td></tr>
+  </tbody>
+</table></div>
+<p class="small col">The 4 faults without a run came within 30 minutes of an earlier fault with the same origin, so the per-origin throttle held them back. The hour-of-day module adds little detection but moves the right origin from 5 to 15, because it flags the service where the fault starts rather than the busiest caller; the call-graph ranker also never names the business pseudo-service while a real service is flagged. Held-out false runs: one mandate-block spike, one shopping-agent traffic burst and two shopping-agent latency rises, all outside any fault. The new alert "TukTukPay - detection modules run TukTukPaySRE" is saved <b>disabled</b>; the DensityFunction alert stays live until a live act re-test.</p>
 
 <h2 id="sre-app">TukTukPay SRE Agent app in Splunk</h2>
 <div class="col">
@@ -809,7 +832,7 @@ H4 saturation … ~ inconclusive (not corroborated by a log signal)</pre>
   <li><b>Workshop story: show A and C together.</b> Launchpad with Claude Sonnet 4.5 and the checklist instructions is the product as the customer would get it; the container agent shows how far a customer can take it with their own agent, model and governance, still started from Splunk.</li>
   <li><b>Keep the checklist instructions in Launchpad.</b> The tree did not beat them there and failed once on stale evidence. The code-checked tree with parallel sub-agents is now built into our agent (see <a href="#subagents">Sub-agent hypothesis tree</a>); tested on 27 Oct, it was less accurate than the single loop (7/9 offline, wrong on the Act 7 → 4b trap) at twice the cost, so the single loop stays the default. Retry only after "last seen" is measured by code.</li>
   <li><b>Drop option B for now.</b> Revisit only if Splunk confirms custom LLM connections for Launchpad agents; it would also need a public endpoint restricted to the runtime's address.</li>
-  <li><b>Detection:</b> replace the per-signal alert with the five modules (ECOD for sudden faults, drift, seasonal and rules for what ECOD misses, Isolation Forest kept as a second opinion) plus the call-graph ranker; train on clean real hours; fix the throttle (marker at start, per fault). The modules passed the offline coverage test (<a href="#coverage">see above</a>); re-run all acts live before switching over.</li>
+  <li><b>Detection:</b> switch to ECOD + rules + the hour-of-day baseline with the call-graph ranker (<a href="#real-data">replay</a>: origin right in 15 of 15, no false runs on training minutes) after one live act re-test; keep drift and Isolation Forest trained but out of the alert until slow-fault detection is quiet on real signals; retrain weekly as the hour-of-day baseline fills in.</li>
   <li><b>Report to the AI Toolkit team:</b> the runtime's fixed <code>thinking: disabled</code> blocks current Claude models; the "Run AI Agent" alert action never passes alert fields to the agent.</li>
 </ol>
 </div>
@@ -824,7 +847,7 @@ H4 saturation … ~ inconclusive (not corroborated by a log signal)</pre>
     <tr><td>Container <code>llmgw</code> (LiteLLM)</td><td>EC2, <code>127.0.0.1:8443</code></td><td>running, not reachable from outside</td></tr>
     <tr><td>Launchpad agents</td><td><code>TukTukPaySRE</code> (GPT-OSS), <code>TukTukPaySREClaude</code> (tree), <code>TukTukPaySREClaudeChecklist</code></td><td>available</td></tr>
     <tr><td>ML anomaly alert</td><td>saved search, Splunk_ML_Toolkit app (three DensityFunction models)</td><td>enabled</td></tr>
-    <tr><td>Detection modules image <code>anomaly-aitk:2026-10-28</code></td><td>EC2 (built)</td><td>tested offline; not yet running as a container</td></tr>
+    <tr><td>Container <code>tuktuk-detect</code></td><td>EC2, <code>127.0.0.1:5001</code>, image <code>anomaly-aitk:2026-10-28i</code></td><td>running; five models trained on real data (28 Oct); their alert saved disabled</td></tr>
     <tr><td>Public repository and quick start</td><td>GitHub <code>khsydney/splunk-aitk-launchpad-sre-agent</code></td><td>published; quick start tested 28 Oct</td></tr>
   </tbody>
 </table></div>
