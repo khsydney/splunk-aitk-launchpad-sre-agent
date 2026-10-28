@@ -8,6 +8,8 @@ It covers the whole loop: **detect** an anomaly with ML models, **investigate** 
 agent that reads metrics, traces and logs through MCP tools, **propose** one action for a human to approve, and
 **show** every investigation in a Splunk app.
 
+**📖 Read the full write-up with diagrams and results: https://khsydney.github.io/splunk-aitk-launchpad-sre-agent/** (source: `docs/index.html`)
+
 > All results below come from a **simulated** payment platform ("TukTukPay", a lab with injected faults). Latencies,
 > errors and payments are not real. Treat the numbers as a lab benchmark, not a production claim.
 
@@ -43,7 +45,7 @@ flowchart LR
 | `agent-container/` | Our **own agent runtime inside an AITK container**: `| fit AITKContainer algo=tuktuk_sre` runs the agent (Claude with thinking, escalation, evidence checks, approval policy, optional sub-agent hypothesis tree) and returns the answer as search columns | Image based on `splunk/mltk-container-golden-cpu`; agent in a Python 3.11 venv |
 | `detection/` | **Anomaly detection that starts the agent**: the scheduled alert, the Infrastructure Monitoring add-on setup (`| sim flow`), live act tests, a model bake-off and the five **DSDL modules** (`modules/`) | Modules: `tuktuk_ecod`, `tuktuk_iforest`, `tuktuk_drift`, `tuktuk_seasonal`, `tuktuk_rules` |
 | `splunk-app/` | **TukTukPay SRE Agent** Splunk app: case list, conclusion card, Datadog-style hypothesis tree (tree / selected hypothesis), sub-agent timeline, evidence with links, agent trace | Custom HTML/JS view; read-only |
-| `docs/` | Write-up with architecture diagrams and results (`agent-runtime-options.html`), the detection coverage plan, the sub-agent tree plan | |
+| `docs/` | Write-up with architecture diagrams and results (`index.html`, published with GitHub Pages), the detection coverage plan, the sub-agent tree plan | |
 | `lib/stack.py` | Splunk Web session helper (form login, web-proxied REST, search) | env: `SPLUNK_WEB_URL`, `SPLUNK_CREDS_FILE`, `SPLUNK_VERIFY_TLS` |
 
 ## Requirements
