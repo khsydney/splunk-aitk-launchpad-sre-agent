@@ -1,0 +1,753 @@
+<title>TukTukPay Agent Runtimes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~70ch) with wide figures; verdict first, then mechanism, then evidence. */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --fg:#17202a; --muted:#5b6670; --line:#d9ddd8;
+  --accent:#0d6b5e; --accent-soft:#e1f0ec; --warn:#a85a00; --warn-soft:#fbf0dd; --bad:#b42318; --bad-soft:#fbe4e1; --good:#1d7a3a;
+  --zone-splunk:#eef0f6; --zone-aws:#eef5f1; --zone-ext:#f7f1ea;
+  --display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171b; --surface:#1a2126; --fg:#e7ebe9; --muted:#9aa6ad; --line:#2e383f;
+  --accent:#4cc2ad; --accent-soft:#16332e; --warn:#f0a948; --warn-soft:#352812; --bad:#f2786b; --bad-soft:#3a1d1a; --good:#6ccf8a;
+  --zone-splunk:#1d2330; --zone-aws:#172820; --zone-ext:#2a2219; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171b; --surface:#1a2126; --fg:#e7ebe9; --muted:#9aa6ad; --line:#2e383f;
+  --accent:#4cc2ad; --accent-soft:#16332e; --warn:#f0a948; --warn-soft:#352812; --bad:#f2786b; --bad-soft:#3a1d1a; --good:#6ccf8a;
+  --zone-splunk:#1d2330; --zone-aws:#172820; --zone-ext:#2a2219; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:40px 80px}
+.col{max-width:72ch}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,4.5vw,2.9rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:1.55rem;font-weight:700;margin-top:56px;padding-top:18px;border-top:1px solid var(--line)}
+h3{font-size:1.1rem;font-weight:700;margin-top:28px}
+p{margin:12px 0}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:1.15rem;color:var(--fg);margin-top:16px}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}
+pre{font-family:var(--mono);font-size:.84rem;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;line-height:1.5}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:28px}
+.vcard{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;min-width:0}
+.vcard.best{border:2px solid var(--accent);background:var(--accent-soft)}
+.vcard h3{margin:4px 0 6px;font-size:1.05rem}
+.pill{display:inline-block;font-family:var(--mono);font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:2px 9px;font-weight:500}
+.p-best{background:var(--accent);color:var(--surface)}
+.p-ok{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.p-warn{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
+figure{margin:24px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;max-width:100%;height:auto;color:var(--fg)}
+figcaption{font-size:.9rem;color:var(--muted);margin-top:10px;max-width:80ch}
+.tbl{overflow-x:auto;margin:18px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.92rem;font-variant-numeric:tabular-nums}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right;white-space:nowrap}
+.yes{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.part{color:var(--warn);font-weight:600}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.two>*{min-width:0}
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:0 6px 6px 0;margin:16px 0}
+ul{padding-left:20px}li{margin:4px 0}
+.small{font-size:.88rem;color:var(--muted)}
+.glossary{display:grid;grid-template-columns:minmax(90px,max-content) 1fr;gap:4px 16px;font-size:.92rem}
+.glossary dt{font-family:var(--mono);font-weight:500}
+.glossary dd{margin:0;color:var(--muted)}
+a{color:var(--accent)}
+@media (max-width:520px){.wrap{padding-inline:16px}h2{margin-top:40px}}
+</style>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">TukTukPay · workshop war room · AI (artificial intelligence) Toolkit research · 27 Oct 2026</div>
+  <h1>Where should the SRE agent run?</h1>
+  <p class="lede">Three ways to run an LLM (large language model) SRE (site reliability engineering) agent from Splunk's AI Toolkit were built and tested on the TukTukPay EC2 (Elastic Compute Cloud) Splunk against live failure scenarios. One runs the agent we wrote, with Claude Opus 5.5, from a single line of SPL (Search Processing Language).</p>
+</header>
+
+<section>
+  <div class="verdict">
+    <div class="vcard best">
+      <span class="pill p-best">Recommended</span>
+      <h3>Own agent in a toolkit container</h3>
+      <p>Our <code>sre_agent</code> runs inside the AI Toolkit's container framework on our EC2. Splunk starts it with <code>| fit AITKContainer</code>. Full control: Claude Sonnet / Opus 5.5 with thinking, our loop, budgets and approval rules.</p>
+      <p class="small">Proven live: Act 1 correct in 74 s, USD (US dollars) 0.33.</p>
+    </div>
+    <div class="vcard">
+      <span class="pill p-ok">Keep for the demo</span>
+      <h3>Launchpad agent, Claude Sonnet 4.5</h3>
+      <p>Splunk's built-in Agent Launchpad with the tuned checklist instructions. Splunk runs the loop in its cloud. Shows the product as customers get it, with its chat and run history.</p>
+      <p class="small">Checklist instructions: all acts correct. Claude 5.5 models refused by Splunk's runtime.</p>
+    </div>
+    <div class="vcard">
+      <span class="pill p-warn">Not viable today</span>
+      <h3>Launchpad + LiteLLM gateway</h3>
+      <p>A translator in front of Anthropic so Launchpad could use Claude 5.5. Works on the instance, but needs a public endpoint that Splunk's cloud runtime can reach, and Splunk documents custom LLMs as unsupported for agents.</p>
+      <p class="small">Proven in the middle only.</p>
+    </div>
+  </div>
+</section>
+
+<h2>The three runtimes side by side</h2>
+<div class="col"><p>The deciding question is who runs the agent loop: the plan, the tool calls, deciding when it knows enough. In the two Launchpad options Splunk's cloud runtime runs it; in the container option our own code does. Everything else follows from that.</p></div>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 470" role="img" aria-label="Three runtime options. Option A and B run the agent loop in Splunk's cloud runtime, option B adds a gateway on our EC2 between the runtime and Anthropic. Option C runs the loop in a container on our EC2 next to Splunk.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+      <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+      <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+    </defs>
+    <!-- column titles -->
+    <text x="160" y="22" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="15" fill="currentColor">A · Launchpad (stock)</text>
+    <text x="490" y="22" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="15" fill="currentColor">B · Launchpad + LiteLLM gateway</text>
+    <text x="820" y="22" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size="15" fill="var(--accent)">C · Own agent in toolkit container</text>
+
+    <!-- zones: rows -->
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      <rect x="10" y="40" width="960" height="120" rx="6" fill="var(--zone-aws)"/>
+      <text x="20" y="57">OUR AWS (EC2 Splunk)</text>
+      <rect x="10" y="172" width="960" height="140" rx="6" fill="var(--zone-splunk)"/>
+      <text x="20" y="189">SPLUNK CLOUD (agent runtime, Singapore)</text>
+      <rect x="10" y="324" width="960" height="136" rx="6" fill="var(--zone-ext)"/>
+      <text x="20" y="341">MODEL + TOOLS (Anthropic API, MCP servers)</text>
+    </g>
+
+    <!-- A -->
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="85" y="80" width="150" height="44" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="160" y="99">Alert / search</text><text x="160" y="115" font-family="var(--mono)" font-size="11">| aiagent</text>
+      <rect x="70" y="212" width="180" height="56" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="2"/>
+      <text x="160" y="235" font-weight="600">Agent loop</text><text x="160" y="252" font-size="11.5">Splunk's code</text>
+      <rect x="85" y="372" width="150" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="160" y="394">GPT-OSS 120B or</text><text x="160" y="410">Claude Sonnet 4.5</text>
+    </g>
+    <line x1="160" y1="124" x2="160" y2="208" stroke="currentColor" marker-end="url(#ar)"/>
+    <text x="168" y="168" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">Cloud Connect</text>
+    <line x1="160" y1="268" x2="160" y2="368" stroke="currentColor" marker-end="url(#ar)"/>
+    <text x="168" y="300" font-family="var(--mono)" font-size="10.5" fill="var(--bad)">thinking: disabled</text>
+    <text x="168" y="314" font-family="var(--mono)" font-size="10.5" fill="var(--bad)">→ 5.5 models: HTTP 400</text>
+
+    <!-- B -->
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="345" y="80" width="130" height="44" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="410" y="99">Alert / search</text><text x="410" y="115" font-family="var(--mono)" font-size="11">| aiagent</text>
+      <rect x="505" y="72" width="140" height="60" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="575" y="95" font-weight="600">LiteLLM gateway</text><text x="575" y="112" font-size="11">OpenAI → Claude</text><text x="575" y="125" font-size="11">fixes thinking</text>
+      <rect x="320" y="212" width="180" height="56" rx="6" fill="var(--surface)" stroke="currentColor" stroke-width="2"/>
+      <text x="410" y="235" font-weight="600">Agent loop</text><text x="410" y="252" font-size="11.5">Splunk's code</text>
+      <rect x="500" y="372" width="150" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="575" y="394">Claude Sonnet /</text><text x="575" y="410">Opus 5.5</text>
+    </g>
+    <line x1="410" y1="124" x2="410" y2="208" stroke="currentColor" marker-end="url(#ar)"/>
+    <path d="M500 230 C 560 230, 575 180, 575 136" fill="none" stroke="var(--bad)" stroke-dasharray="5 4" marker-end="url(#arB)"/>
+    <text x="520" y="198" font-family="var(--mono)" font-size="10.5" fill="var(--bad)">needs public HTTPS</text>
+    <text x="520" y="211" font-family="var(--mono)" font-size="10.5" fill="var(--bad)">— blocked</text>
+    <line x1="575" y1="132" x2="575" y2="368" stroke="currentColor" marker-end="url(#ar)"/>
+
+    <!-- C -->
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="690" y="70" width="110" height="64" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="745" y="94">Alert / search</text><text x="745" y="110" font-family="var(--mono)" font-size="10.5">| fit AITK-</text><text x="745" y="123" font-family="var(--mono)" font-size="10.5">Container</text>
+      <rect x="830" y="66" width="130" height="72" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+      <text x="895" y="90" font-weight="600" fill="var(--accent)">Container</text><text x="895" y="107" font-weight="600" fill="var(--accent)">agent loop</text><text x="895" y="124" font-size="11">our sre_agent</text>
+      <rect x="770" y="372" width="190" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="865" y="394">Claude Sonnet / Opus 5.5</text><text x="865" y="410">+ MCP tools (O11y, Splunk)</text>
+    </g>
+    <line x1="800" y1="102" x2="826" y2="102" stroke="var(--accent)" stroke-width="2" marker-end="url(#arA)"/>
+    <line x1="895" y1="138" x2="895" y2="368" stroke="var(--accent)" stroke-width="2" marker-end="url(#arA)"/>
+    <text x="903" y="240" font-family="var(--mono)" font-size="10.5" fill="var(--accent)">direct, thinking on</text>
+    <text x="903" y="254" font-family="var(--mono)" font-size="10.5" fill="var(--accent)">skips Splunk cloud</text>
+  </svg>
+  </div>
+  <figcaption>The agent loop sits in Splunk's cloud for A and B, and on our own EC2 for C. B only changes the last hop to the model and adds a hop that must be reachable from the internet; C removes the cloud hop entirely.</figcaption>
+</figure>
+
+<div class="tbl"><table>
+  <thead><tr><th></th><th>A · Launchpad (stock)</th><th>B · Launchpad + gateway</th><th>C · Toolkit container</th></tr></thead>
+  <tbody>
+    <tr><td>Who runs the loop</td><td>Splunk cloud runtime (AWS AgentCore)</td><td>Splunk cloud runtime</td><td><b>Our code</b>, on our EC2</td></tr>
+    <tr><td>Models</td><td>Splunk hosted (GPT-OSS 120B), Claude Sonnet 4.5; <span class="no">no Claude 5.5</span></td><td>Any model the gateway can reach</td><td><span class="yes">Claude Sonnet / Opus 5.5 with thinking</span>, escalation</td></tr>
+    <tr><td>What you control</td><td>Instructions, tool list, timeout</td><td>Instructions + the model call</td><td>Everything: loop, tools, budgets, approval policy, evidence check</td></tr>
+    <tr><td>Hypothesis tree</td><td>Through instructions only</td><td>Through instructions only</td><td>In code: parallel sub-agents, verdicts checked by code, budgets (built 27 Oct)</td></tr>
+    <tr><td>User interface</td><td>Launchpad chat and run history</td><td>Launchpad chat and run history</td><td>Search results, dashboards, our agent console</td></tr>
+    <tr><td>Data path</td><td>Prompts and tool results via Splunk cloud</td><td>Via Splunk cloud, then our gateway</td><td>Direct: container → Anthropic, MCP servers</td></tr>
+    <tr><td>Token metering</td><td>Not exposed</td><td>Gateway can meter every call</td><td>Agent posts tokens and cost per call to HEC (HTTP Event Collector)</td></tr>
+    <tr><td>Status</td><td><span class="yes">Working</span></td><td><span class="part">Proven on the instance only</span></td><td><span class="yes">Working end to end</span></td></tr>
+  </tbody>
+</table></div>
+
+<h2>How option C works</h2>
+<div class="col">
+<p>The AI Toolkit includes the Data Science and Deep Learning (DSDL) container framework. Splunk's container image runs a small web API (application programming interface); the toolkit sends the rows of a search to it over HTTPS (Hypertext Transfer Protocol Secure) and the image's API loads a Python module, <code>app/model/&lt;algo&gt;.py</code>, and calls its <code>apply()</code>. That module does not have to be machine learning. Ours hands each alert row to the agent and returns its answer as columns.</p>
+</div>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 300" role="img" aria-label="Option C request path: a Splunk search sends rows to the container API, the toolkit module runs the agent in a Python 3.11 environment, the agent calls Claude and the MCP tools, and the answer returns as search columns while every call is logged to the audit index.">
+    <defs>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    </defs>
+    <rect x="10" y="10" width="300" height="280" rx="6" fill="var(--zone-aws)"/>
+    <text x="22" y="30" font-family="var(--mono)" font-size="11" fill="var(--muted)">SPLUNK (EC2 host)</text>
+    <rect x="330" y="10" width="420" height="280" rx="6" fill="var(--zone-aws)" stroke="var(--accent)" stroke-dasharray="4 4"/>
+    <text x="342" y="30" font-family="var(--mono)" font-size="11" fill="var(--accent)">CONTAINER tuktuk-sre (same host, localhost:5000)</text>
+    <rect x="770" y="10" width="200" height="280" rx="6" fill="var(--zone-ext)"/>
+    <text x="782" y="30" font-family="var(--mono)" font-size="11" fill="var(--muted)">EXTERNAL</text>
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="30" y="50" width="260" height="58" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="160" y="72" font-family="var(--mono)" font-size="11">| eval detector="payment-router error"</text>
+      <text x="160" y="90" font-family="var(--mono)" font-size="11">| fit AITKContainer algo=tuktuk_sre</text>
+      <rect x="30" y="140" width="260" height="46" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="160" y="160">AITKContainer algorithm</text><text x="160" y="176" font-size="11">reads dsdl_container.conf + api_token</text>
+      <rect x="30" y="222" width="260" height="50" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="160" y="243">Results as columns</text><text x="160" y="260" font-family="var(--mono)" font-size="10.5">predicted_root_cause_service …</text>
+
+      <rect x="350" y="50" width="180" height="46" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="440" y="70">Splunk API (uvicorn)</text><text x="440" y="86" font-family="var(--mono)" font-size="11">POST /fit, /apply</text>
+      <rect x="350" y="130" width="180" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="440" y="152">tuktuk_sre.py</text><text x="440" y="169" font-size="11">Python 3.9 module</text>
+      <rect x="555" y="110" width="180" height="96" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="645" y="135" font-weight="600" fill="var(--accent)">aitk_runner.py</text><text x="645" y="152" font-size="11">Python 3.11 venv</text><text x="645" y="169" font-size="11">sre_agent: case, loop,</text><text x="645" y="184" font-size="11">escalation, policy "ask"</text>
+
+      <rect x="790" y="60" width="160" height="46" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="870" y="80">Anthropic API</text><text x="870" y="96" font-size="11">Sonnet → Opus 5.5</text>
+      <rect x="790" y="130" width="160" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="870" y="152">MCP tools</text><text x="870" y="169" font-size="11">Observability Cloud, Splunk</text>
+      <rect x="790" y="216" width="160" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="870" y="238">HEC audit</text><text x="870" y="255" font-family="var(--mono)" font-size="10.5">tuktukpay_agent_audit</text>
+    </g>
+    <g stroke="currentColor" fill="none">
+      <line x1="160" y1="108" x2="160" y2="136" marker-end="url(#ar2)"/>
+      <path d="M290 160 L320 160 L320 73 L346 73" marker-end="url(#ar2)"/>
+      <line x1="440" y1="96" x2="440" y2="126" marker-end="url(#ar2)"/>
+      <line x1="530" y1="158" x2="551" y2="158" marker-end="url(#ar2)"/>
+      <line x1="735" y1="130" x2="786" y2="88" marker-end="url(#ar2)"/>
+      <line x1="735" y1="160" x2="786" y2="160" marker-end="url(#ar2)"/>
+      <line x1="735" y1="190" x2="786" y2="240" marker-end="url(#ar2)"/>
+      <path d="M555 200 L540 246 L294 246" marker-end="url(#ar2)"/>
+    </g>
+    <g font-family="var(--mono)" font-size="10.5" fill="var(--muted)">
+      <text x="296" y="152">HTTPS + token</text>
+      <text x="536" y="150">subprocess</text>
+      <text x="742" y="112">messages</text>
+      <text x="745" y="154">tool calls</text>
+      <text x="742" y="230">tokens, cost</text>
+      <text x="360" y="240">answer rows</text>
+    </g>
+  </svg>
+  </div>
+  <figcaption>One SPL line drives the whole investigation. The container listens on localhost only; credentials come from a root-only env file and a read-only mount, never from the image. The base image ships Python 3.9, and the current Anthropic SDK (software development kit) needs 3.10 or newer, so the agent runs in its own Python 3.11 environment.</figcaption>
+</figure>
+
+<div class="two">
+<div>
+<h3>What we built</h3>
+<ul>
+  <li><code>services/sre-agent/aitk-container/Dockerfile</code>: Splunk's <code>mltk-container-golden-cpu:5.2.1</code> + Python 3.11 + Anthropic SDK + <code>sre_agent</code>.</li>
+  <li><code>tuktuk_sre.py</code>: the toolkit module (<code>init</code>, <code>fit</code>, <code>save</code>, <code>load</code>, <code>summary</code>, <code>apply</code>).</li>
+  <li><code>aitk_runner.py</code>: one agent case per row, policy <code>ask</code> (proposes, never acts).</li>
+  <li>Toolkit config: model stanza <code>tuktuk_sre</code> → <code>https://localhost:5000</code>, Docker connection, shared API token in Splunk's password store.</li>
+</ul>
+</div>
+<div>
+<h3>Call it from SPL</h3>
+<pre>| makeresults
+| eval detector="payment-router error"
+| fit AITKContainer algo=tuktuk_sre
+      window="-12m" detector
+      into app:tuktuk_sre</pre>
+<p class="small">An ML (machine learning) anomaly row works too: pass <code>svc</code> and <code>evidence</code> instead of <code>detector</code>.</p>
+</div>
+</div>
+
+<h3>Live result: Act 1, 06:26Z</h3>
+<pre>predicted_root_cause_service  acquirer-sim
+predicted_summary             the acq-kbank issuer link for BIN 457173 (THB) stopped responding; payment-router hits
+                              its 2.5 s timeout and fails over to acq-uob, pushing its error rate past 5%
+predicted_proposed_action     route BIN 457173 / THB off acq-kbank   (state: awaiting_approval)
+predicted_model               claude-opus-5-5   (escalated from Sonnet 5.5)
+predicted_cost_usd            0.33     predicted_seconds  74     tokens 40,478 in / 3,534 out</pre>
+
+<h2>Why Claude 5.5 fails inside Launchpad</h2>
+<div class="col">
+<p>"Thinking" is Claude's extended reasoning: a private scratchpad before each answer or tool call. Splunk's cloud runtime always sends <code>thinking: {"type": "disabled"}</code>. Sonnet 4.5 accepts that. The 5.5 models changed the options and refuse the old value, so every run fails with HTTP 400 even though the connection test passes, because the test runs on the EC2 instance and not in the runtime. Errors as recorded in Splunk's audit log on 27 Oct:</p>
+</div>
+<pre>Sonnet 5.5  400  To turn thinking off on this model, send "thinking": {"type": "between_tools"}
+                 instead of {"type": "disabled"}.
+Opus 5.5    400  "thinking.type.disabled" is not supported for this model.
+                 Use "thinking.type.adaptive" and "output_config.effort".</pre>
+<div class="note col"><b>Two traps for anyone repeating this.</b> An Anthropic connection keeps its endpoint only if it is set when the connection is created; editing it later drops the endpoint and runs fail with "Connection error". Agent names must be letters and digits only; a hyphen gives a bare "Failed to create agent" in the UI (user interface), with the real reason only in <code>mlspl.log</code>.</div>
+
+<h2>Does the hypothesis tree help?</h2>
+<div class="col">
+<p>Datadog's Bits AI SRE investigates as a hypothesis tree: competing causes, each validated, invalidated or inconclusive, with deeper "why?" branches under the ones that hold. We gave the Launchpad agent the same method and ran it against the existing checklist instructions on the same model (Claude Sonnet 4.5), the same incident and the same moment.</p>
+</div>
+
+<figure>
+  <svg viewBox="0 0 700 300" role="img" aria-label="Seconds per investigation, checklist versus hypothesis tree: Act 2 215 versus 258, Act 6 354 versus 255, Act 7 293 versus 255, Act 4b 231 versus 214 (tree wrong), Act 1 241 versus 201.">
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      <line x1="90" y1="20" x2="90" y2="250" stroke="var(--line)"/>
+      <line x1="90" y1="250" x2="690" y2="250" stroke="var(--line)"/>
+      <!-- scale: 0..400 s → 0..560 px, x = 90 + s*1.4 -->
+      <line x1="230" y1="20" x2="230" y2="250" stroke="var(--line)" stroke-dasharray="2 4"/><text x="230" y="266" text-anchor="middle">100 s</text>
+      <line x1="370" y1="20" x2="370" y2="250" stroke="var(--line)" stroke-dasharray="2 4"/><text x="370" y="266" text-anchor="middle">200 s</text>
+      <line x1="510" y1="20" x2="510" y2="250" stroke="var(--line)" stroke-dasharray="2 4"/><text x="510" y="266" text-anchor="middle">300 s</text>
+      <line x1="650" y1="20" x2="650" y2="250" stroke="var(--line)" stroke-dasharray="2 4"/><text x="650" y="266" text-anchor="middle">400 s</text>
+      <text x="90" y="266" text-anchor="middle">0</text>
+    </g>
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor">
+      <text x="80" y="47" text-anchor="end">Act 2</text>
+      <rect x="90" y="32" width="301" height="12" fill="var(--muted)"/><text x="397" y="43" font-family="var(--mono)" font-size="11">215</text>
+      <rect x="90" y="48" width="361" height="12" fill="var(--accent)"/><text x="457" y="59" font-family="var(--mono)" font-size="11">258</text>
+      <text x="80" y="97" text-anchor="end">Act 6</text>
+      <rect x="90" y="82" width="496" height="12" fill="var(--muted)"/><text x="592" y="93" font-family="var(--mono)" font-size="11">354</text>
+      <rect x="90" y="98" width="357" height="12" fill="var(--accent)"/><text x="453" y="109" font-family="var(--mono)" font-size="11">255</text>
+      <text x="80" y="147" text-anchor="end">Act 7</text>
+      <rect x="90" y="132" width="410" height="12" fill="var(--muted)"/><text x="506" y="143" font-family="var(--mono)" font-size="11">293</text>
+      <rect x="90" y="148" width="357" height="12" fill="var(--accent)"/><text x="453" y="159" font-family="var(--mono)" font-size="11">255</text>
+      <text x="80" y="191" text-anchor="end">Act 4b</text>
+      <rect x="90" y="176" width="323" height="12" fill="var(--muted)"/><text x="419" y="187" font-family="var(--mono)" font-size="11">231</text>
+      <rect x="90" y="192" width="300" height="12" fill="var(--accent)"/><text x="396" y="203" font-family="var(--mono)" font-size="11">214 · wrong cause</text>
+      <text x="80" y="235" text-anchor="end">Act 1</text>
+      <rect x="90" y="220" width="337" height="12" fill="var(--muted)"/><text x="433" y="231" font-family="var(--mono)" font-size="11">241</text>
+      <rect x="90" y="236" width="281" height="12" fill="var(--accent)"/><text x="377" y="247" font-family="var(--mono)" font-size="11">201</text>
+    </g>
+    <g font-family="var(--body)" font-size="12" fill="currentColor">
+      <rect x="520" y="278" width="12" height="10" fill="var(--muted)"/><text x="538" y="287">checklist</text>
+      <rect x="610" y="278" width="12" height="10" fill="var(--accent)"/><text x="628" y="287">tree</text>
+    </g>
+  </svg>
+  <figcaption>Run time per investigation, both on Claude Sonnet 4.5 in Launchpad. The tree was faster on four of five acts, but on Act 4b it named the wrong cause.</figcaption>
+</figure>
+
+<div class="tbl"><table>
+  <thead><tr><th>Act</th><th>Correct answer</th><th>Checklist</th><th>Hypothesis tree</th></tr></thead>
+  <tbody>
+    <tr><td>2 · risk-engine</td><td>model v3 canary (20 %)</td><td><span class="yes">correct</span> · 17 calls, 1 failed</td><td><span class="yes">correct</span> · 19 calls, 0 failed</td></tr>
+    <tr><td>6 · ledger memory</td><td>leak → OOM (out-of-memory) kill</td><td><span class="yes">correct</span> · 33 calls, 1 failed</td><td><span class="yes">correct</span>, with 6 → 306 MiB against a 384 MiB limit · 25 calls, 0 failed</td></tr>
+    <tr><td>7 · wallet-sim crash loop</td><td>release 1.7.0</td><td><span class="yes">correct</span> (missing schema) · 19 calls, 0 failed</td><td><span class="yes">correct</span> (missing schema) · 22 calls, 0 failed</td></tr>
+    <tr><td>4b · KYA (Know-Your-Agent) registry</td><td>registry database refusing connections</td><td><span class="yes">correct</span> · 17 calls, 0 failed</td><td><span class="no">wrong</span>: blamed the wallet-sim 1.7.0 release, a leftover from Act 7 thirteen minutes earlier · 17 calls, 0 failed</td></tr>
+    <tr><td>1 · payment-router</td><td>acq-kbank, BIN 457173 (not the acq-uob fallback)</td><td><span class="yes">correct</span>, down to host acq-kbank-auth-host-02 · 18 calls, 0 failed</td><td><span class="yes">correct</span>, same host · 12 calls, 0 failed (one branch wrongly invalidated acquirer-sim on its own zero error count, then recovered)</td></tr>
+  </tbody>
+</table></div>
+<div class="col"><p>Verdict on instructions alone: <b>not better.</b> Score: checklist 5 of 5 correct, tree 4 of 5. Both were right on Acts 1, 2, 6 and 7; the tree was faster on four of five and made no failed tool calls, but on Act 4b it validated a branch built on leftover evidence from the previous act and named the wrong cause, where the checklist was right. The checklist forces a "when was this last seen?" check before deciding; the tree let a strong-looking branch win early. A tree is worth keeping only with that freshness check enforced in code, plus parallel branches and per-branch budgets, which only option C can provide. Single runs per act, so treat the timing differences as indicative.</p></div>
+
+
+<h2 id="subagents">Sub-agent hypothesis tree in our agent</h2>
+<div class="col">
+<p>The Launchpad test showed the limit of a tree written into instructions: one model explores every branch in turn, and nothing stops it from accepting a branch built on old evidence. In option C the loop is our code, so the tree can be built properly. Since 27 Oct our agent has a second investigation method, <code>SRE_AGENT_METHOD=tree</code>. The default single loop is unchanged.</p>
+</div>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 400" role="img" aria-label="Sub-agent hypothesis tree: an Opus planner writes competing hypotheses, Sonnet sub-agents test them in parallel with their own tools, code checks every validated verdict for two independent signals and freshness, validated branches get deeper child hypotheses, and the planner writes the final answer from the checked tree.">
+    <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="10" y="150" width="150" height="70" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="85" y="176" font-weight="600">Evidence bundle</text><text x="85" y="193" font-size="11">collected by code</text><text x="85" y="208" font-size="11">(orientation)</text>
+      <rect x="200" y="150" width="150" height="70" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="275" y="176" font-weight="600" fill="var(--accent)">Planner</text><text x="275" y="193" font-size="11">Opus 5.5, thinking</text><text x="275" y="208" font-size="11">2–4 hypotheses</text>
+      <rect x="400" y="40" width="170" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="485" y="62">H1 own fault</text><text x="485" y="80" font-size="11">Sonnet 5.5 sub-agent</text>
+      <rect x="400" y="112" width="170" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="485" y="134">H2 dependency</text><text x="485" y="152" font-size="11">Sonnet 5.5 sub-agent</text>
+      <rect x="400" y="184" width="170" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="485" y="206">H3 change / release</text><text x="485" y="224" font-size="11">Sonnet 5.5 sub-agent</text>
+      <rect x="400" y="256" width="170" height="54" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="485" y="278">H4 saturation</text><text x="485" y="296" font-size="11">Sonnet 5.5 sub-agent</text>
+      <rect x="620" y="120" width="170" height="130" rx="6" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="705" y="146" font-weight="600" fill="var(--warn)">Code checks</text>
+      <text x="705" y="168" font-size="11.5">metric/trace + log</text><text x="705" y="184" font-size="11.5">signal cited?</text>
+      <text x="705" y="206" font-size="11.5">still active?</text><text x="705" y="222" font-size="11.5">(last seen ≤ 5 min</text><text x="705" y="238" font-size="11.5">before the case)</text>
+      <rect x="830" y="70" width="140" height="62" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="900" y="94">Deepen "why?"</text><text x="900" y="112" font-size="11">H2.1, H2.2 …</text><text x="900" y="126" font-size="11">depth ≤ 3</text>
+      <rect x="830" y="236" width="140" height="62" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="900" y="260" font-weight="600" fill="var(--accent)">Decide</text><text x="900" y="278" font-size="11">planner writes the</text><text x="900" y="292" font-size="11">answer from the tree</text>
+    </g>
+    <g stroke="currentColor" fill="none">
+      <line x1="160" y1="185" x2="196" y2="185" marker-end="url(#ar4)"/>
+      <path d="M350 185 L375 185 L375 67 L396 67" marker-end="url(#ar4)"/>
+      <path d="M375 139 L396 139" marker-end="url(#ar4)"/>
+      <path d="M375 185 L375 211 L396 211" marker-end="url(#ar4)"/>
+      <path d="M375 211 L375 283 L396 283" marker-end="url(#ar4)"/>
+      <path d="M570 67 L595 67 L595 160 L616 160" marker-end="url(#ar4)"/>
+      <line x1="570" y1="139" x2="616" y2="170" marker-end="url(#ar4)"/>
+      <line x1="570" y1="211" x2="616" y2="200" marker-end="url(#ar4)"/>
+      <path d="M570 283 L595 283 L595 215 L616 215" marker-end="url(#ar4)"/>
+      <path d="M790 150 L810 150 L810 101 L826 101" marker-end="url(#ar4)"/>
+      <path d="M790 225 L810 225 L810 267 L826 267" marker-end="url(#ar4)"/>
+      <path d="M900 70 L900 20 L485 20 L485 36" stroke-dasharray="5 4" marker-end="url(#ar4)"/>
+    </g>
+    <g font-family="var(--mono)" font-size="10.5" fill="var(--muted)">
+      <text x="380" y="32">in parallel, own tools</text>
+      <text x="600" y="14">children → new sub-agents</text>
+      <text x="800" y="160" text-anchor="end">validated</text>
+      <text x="800" y="248" text-anchor="end">checked tree</text>
+      <text x="10" y="340">each sub-agent: ≤ 4 tool calls, ≤ 2 Splunk searches; at most 2 searches in flight across all sub-agents</text>
+      <text x="10" y="358">whole tree: ≤ 12 sub-agents, ≤ 240 s; every node is written to the audit index</text>
+    </g>
+  </svg>
+  </div>
+  <figcaption>A "validated" verdict only counts after the code checks pass. A branch built on a signal that stopped before the case opened is invalidated as leftover, which is the Act 4b mistake of the prompt-only tree.</figcaption>
+</figure>
+
+<div class="two">
+<div>
+<h3>How a verdict is judged</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Sub-agent says</th><th>Code finds</th><th>Node status</th></tr></thead>
+  <tbody>
+    <tr><td>validated</td><td>metric/trace + log cited, seen ≤ 5 min before the case</td><td><span class="yes">validated</span>, deepened</td></tr>
+    <tr><td>validated</td><td>only one kind of signal cited</td><td><span class="part">inconclusive</span></td></tr>
+    <tr><td>validated</td><td>signal last seen earlier (leftover)</td><td><span class="no">invalidated</span> as stale</td></tr>
+    <tr><td>validated</td><td>no last-seen time given</td><td><span class="part">inconclusive</span></td></tr>
+    <tr><td>invalidated / inconclusive</td><td>no check needed</td><td>as stated</td></tr>
+  </tbody>
+</table></div>
+</div>
+<div>
+<h3>Where to see it</h3>
+<ul>
+  <li><b>Splunk search</b> (container): columns <code>predicted_tree</code> (text) and <code>predicted_tree_json</code>. Pick the method per call with <code>method="tree"</code> or <code>method="loop"</code>.</li>
+  <li><b>Agent console:</b> the tree appears under the cause chain in each case.</li>
+  <li><b>Audit index:</b> <code>sre.tree.branch</code>, <code>sre.tree.verdict</code> and <code>sre.tree.done</code> events per node, with cost and time.</li>
+</ul>
+<pre>H1 payment-router itself … ✗ invalidated
+H2 a dependency is failing … ✓ validated
+│  └─ H2.1 acq-kbank times out for BIN 457173 … ✓ validated
+H3 earlier release … ✗ invalidated (stale: last seen 60 min before the case)
+H4 saturation … ~ inconclusive (not corroborated by a log signal)</pre>
+<p class="small">Illustrative output from the unit test.</p>
+</div>
+</div>
+
+
+<h3 id="one-subagent">Inside one sub-agent</h3>
+<div class="col"><p>Each hypothesis gets its own sub-agent: a separate Claude conversation with its own tools and budget, started in its own thread. It knows only its hypothesis, the path above it in the tree, the alert and the evidence bundle. It never sees what the other sub-agents are doing, so one branch cannot talk the others into its answer.</p></div>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 330" role="img" aria-label="One sub-agent: it receives the hypothesis, its ancestors, the alert and the cached evidence bundle; it runs up to six model rounds with at most four tool calls; it returns a verdict JSON with evidence ids, the implicated component, a last-seen time and child hypotheses; code then checks the verdict and sets the node status.">
+    <defs><marker id="ar5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="var(--body)" font-size="12" fill="currentColor">
+      <rect x="10" y="20" width="200" height="290" rx="6" fill="var(--zone-aws)"/>
+      <text x="22" y="40" font-family="var(--mono)" font-size="11" fill="var(--muted)">INPUT</text>
+      <text x="22" y="66" font-weight="600">Hypothesis H2.1</text><text x="22" y="82" font-size="11">+ suggested test</text>
+      <text x="22" y="110" font-weight="600">Path above it</text><text x="22" y="126" font-size="11">"H2 dependency validated"</text>
+      <text x="22" y="154" font-weight="600">The alert</text><text x="22" y="170" font-size="11">detector, case opened at</text>
+      <text x="22" y="198" font-weight="600">Evidence bundle</text><text x="22" y="214" font-size="11">in the cached system prompt:</text><text x="22" y="228" font-size="11">paid once, reused by siblings</text>
+      <text x="22" y="256" font-weight="600">9 typed tools</text><text x="22" y="272" font-size="11">APM, traces, metrics, SPL</text><text x="22" y="286" font-size="11">templates (no free URLs)</text>
+
+      <rect x="250" y="20" width="330" height="290" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="262" y="40" font-family="var(--mono)" font-size="11" fill="var(--muted)">LOOP (Sonnet 5.5, ≤ 6 rounds)</text>
+      <rect x="270" y="58" width="290" height="40" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="415" y="83" text-anchor="middle">model: "which check proves or disproves this?"</text>
+      <rect x="270" y="118" width="290" height="40" rx="5" fill="var(--surface)" stroke="currentColor"/>
+      <text x="415" y="137" text-anchor="middle">tool call with a stated "why"</text><text x="415" y="151" text-anchor="middle" font-size="10.5" font-family="var(--mono)">≤ 4 calls · ≤ 2 Splunk searches (shared gate)</text>
+      <rect x="270" y="178" width="290" height="40" rx="5" fill="var(--surface)" stroke="currentColor"/>
+      <text x="415" y="203" text-anchor="middle">result back as untrusted data</text>
+      <rect x="270" y="238" width="290" height="52" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="415" y="258" text-anchor="middle" font-weight="600">verdict JSON</text><text x="415" y="276" text-anchor="middle" font-size="10.5" font-family="var(--mono)">verdict · finding · component · last_seen · evidence ids · children</text>
+
+      <rect x="620" y="60" width="160" height="200" rx="6" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="700" y="84" text-anchor="middle" font-weight="600" fill="var(--warn)">Code check</text>
+      <text x="700" y="110" text-anchor="middle" font-size="11">evidence ids resolved</text><text x="700" y="125" text-anchor="middle" font-size="11">against the real tool log</text>
+      <text x="700" y="152" text-anchor="middle" font-size="11">metric/trace + log?</text>
+      <text x="700" y="178" text-anchor="middle" font-size="11">last seen ≤ 5 min</text><text x="700" y="193" text-anchor="middle" font-size="11">before the case?</text>
+      <text x="700" y="222" text-anchor="middle" font-size="11">the model's label for a</text><text x="700" y="237" text-anchor="middle" font-size="11">signal is ignored</text>
+
+      <rect x="820" y="40" width="150" height="66" rx="6" fill="var(--surface)" stroke="var(--good)" stroke-width="2"/>
+      <text x="895" y="66" text-anchor="middle" fill="var(--good)" font-weight="600">validated</text><text x="895" y="84" text-anchor="middle" font-size="11">children become</text><text x="895" y="98" text-anchor="middle" font-size="11">new sub-agents</text>
+      <rect x="820" y="126" width="150" height="56" rx="6" fill="var(--surface)" stroke="var(--bad)" stroke-width="2"/>
+      <text x="895" y="150" text-anchor="middle" fill="var(--bad)" font-weight="600">invalidated</text><text x="895" y="168" text-anchor="middle" font-size="11">incl. "stale" leftovers</text>
+      <rect x="820" y="202" width="150" height="56" rx="6" fill="var(--surface)" stroke="var(--warn)" stroke-width="2"/>
+      <text x="895" y="226" text-anchor="middle" fill="var(--warn)" font-weight="600">inconclusive</text><text x="895" y="244" text-anchor="middle" font-size="11">branch pruned</text>
+    </g>
+    <g stroke="currentColor" fill="none">
+      <line x1="210" y1="165" x2="246" y2="165" marker-end="url(#ar5)"/>
+      <line x1="415" y1="98" x2="415" y2="114" marker-end="url(#ar5)"/>
+      <line x1="415" y1="158" x2="415" y2="174" marker-end="url(#ar5)"/>
+      <path d="M560 198 L572 198 L572 78 L564 78" marker-end="url(#ar5)"/>
+      <line x1="415" y1="218" x2="415" y2="234" marker-end="url(#ar5)"/>
+      <path d="M560 264 L600 264 L600 160 L616 160" marker-end="url(#ar5)"/>
+      <path d="M780 120 L800 120 L800 73 L816 73" marker-end="url(#ar5)"/>
+      <line x1="780" y1="155" x2="816" y2="155" marker-end="url(#ar5)"/>
+      <path d="M780 200 L800 200 L800 230 L816 230" marker-end="url(#ar5)"/>
+    </g>
+    <text x="586" y="140" font-family="var(--mono)" font-size="10" fill="var(--muted)" transform="rotate(90 586 140)">repeat</text>
+  </svg>
+  </div>
+  <figcaption>One sub-agent from start to verdict. The model chooses the checks; code decides whether its "validated" stands. All sub-agents of one level run like this at the same time.</figcaption>
+</figure>
+
+<h3 id="vs-datadog">Compared with Datadog Bits AI SRE</h3>
+<div class="col"><p>Datadog describes Bits AI SRE as an agent that forms hypotheses, tests each with targeted queries, marks them validated, invalidated or inconclusive, and recursively opens deeper hypotheses under the ones that hold until the search space is exhausted. The table puts that next to what we built. Datadog facts come from its public blog posts (Jan and Mar 2026) and docs, read on 27 Oct 2026; anything they do not state is marked so.</p></div>
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 230" role="img" aria-label="Side by side flows: Datadog monitor alert to Bits AI SRE hypothesis tree to conclusion; TukTukPay Splunk alert to container planner, parallel sub-agents, code checks and decision.">
+    <defs><marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)"><text x="10" y="18">DATADOG BITS AI SRE (as published)</text><text x="10" y="128">OUR AGENT IN THE AI TOOLKIT CONTAINER</text></g>
+    <g font-family="var(--body)" font-size="12" fill="currentColor" text-anchor="middle">
+      <rect x="10" y="30" width="150" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="85" y="54">monitor goes to</text><text x="85" y="70">Alert (auto-investigate)</text>
+      <rect x="200" y="30" width="170" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="285" y="54">hypotheses from</text><text x="285" y="70">Datadog telemetry</text>
+      <rect x="410" y="30" width="200" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="510" y="54">test → validate / invalidate</text><text x="510" y="70">→ deeper sub-hypotheses</text>
+      <rect x="650" y="30" width="150" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="725" y="54">conclusion or</text><text x="725" y="70">"inconclusive"</text>
+      <rect x="840" y="30" width="130" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="905" y="54">Hypothesis Tree</text><text x="905" y="70">view, reports</text>
+
+      <rect x="10" y="140" width="150" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="85" y="164">detector or ML</text><text x="85" y="180">anomaly alert (SPL)</text>
+      <rect x="200" y="140" width="170" height="56" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="285" y="164">Opus planner on the</text><text x="285" y="180">code-collected bundle</text>
+      <rect x="410" y="140" width="200" height="56" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="510" y="164">parallel Sonnet sub-agents</text><text x="510" y="180">+ code checks, depth ≤ 3</text>
+      <rect x="650" y="140" width="150" height="56" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="725" y="164">root cause + action</text><text x="725" y="180">awaiting human approval</text>
+      <rect x="840" y="140" width="130" height="56" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="905" y="164">tree in Splunk,</text><text x="905" y="180">console, audit index</text>
+    </g>
+    <g stroke="currentColor" fill="none">
+      <line x1="160" y1="58" x2="196" y2="58" marker-end="url(#ar6)"/><line x1="370" y1="58" x2="406" y2="58" marker-end="url(#ar6)"/><line x1="610" y1="58" x2="646" y2="58" marker-end="url(#ar6)"/><line x1="800" y1="58" x2="836" y2="58" marker-end="url(#ar6)"/>
+      <line x1="160" y1="168" x2="196" y2="168" marker-end="url(#ar6)"/><line x1="370" y1="168" x2="406" y2="168" marker-end="url(#ar6)"/><line x1="610" y1="168" x2="646" y2="168" marker-end="url(#ar6)"/><line x1="800" y1="168" x2="836" y2="168" marker-end="url(#ar6)"/>
+    </g>
+  </svg>
+  </div>
+  <figcaption>The shape is the same. The differences are in who checks a verdict, whether branches run in parallel, and where the data and the decision live.</figcaption>
+</figure>
+<div class="tbl"><table>
+  <thead><tr><th></th><th>Datadog Bits AI SRE</th><th>Our agent (container, tree method)</th></tr></thead>
+  <tbody>
+    <tr><td>Trigger</td><td>Auto-investigate when a monitor goes to Alert (per monitor or in bulk); also Slack, manual</td><td>Any Splunk search or alert: detector alert, ML anomaly alert, <code>| fit AITKContainer</code></td></tr>
+    <tr><td>Hypothesis states</td><td>validated, invalidated, inconclusive</td><td>validated, invalidated (incl. stale), inconclusive, not tested</td></tr>
+    <tr><td>Deeper branches</td><td>Recursive sub-hypotheses "until it exhausts the search space"</td><td>"Why?" children under validated nodes, depth ≤ 3, ≤ 12 sub-agents</td></tr>
+    <tr><td>Branches run</td><td>Not documented (parallel or sequential not stated)</td><td>In parallel: one sub-agent per hypothesis, 4 at a time</td></tr>
+    <tr><td>Who confirms "validated"</td><td>The agent's own reasoning (no published code check)</td><td>Code: two independent signals and a freshness check</td></tr>
+    <tr><td>Models</td><td>Datadog's choice, not disclosed</td><td>Our choice: Opus 5.5 planner, Sonnet 5.5 sub-agents, thinking on</td></tr>
+    <tr><td>Data it reads</td><td>Datadog metrics, logs, traces, changes, and more</td><td>Splunk Observability Cloud (APM, metrics, traces) + Splunk logs through MCP</td></tr>
+    <tr><td>Time per investigation</td><td>About 3–4 min ("deeper reasoning", Mar 2026)</td><td>Measured in the live test below</td></tr>
+    <tr><td>Actions</td><td>Recommends; remediation through Datadog workflows</td><td>Proposes one catalogue action; a human approves; every step audited</td></tr>
+    <tr><td>Cost model</td><td>Per investigation (AI credits; third-party reports about 6.5 credits, not confirmed)</td><td>Pay per token to Anthropic; cost recorded per case in Splunk</td></tr>
+    <tr><td>Where it runs</td><td>Datadog's SaaS (software as a service)</td><td>Your own container next to your Splunk; data goes only to Anthropic and your MCP endpoints</td></tr>
+  </tbody>
+</table></div>
+
+
+<h3>Results: concurrency proven, accuracy not better</h3>
+<figure>
+  <svg viewBox="0 0 760 330" role="img" aria-label="Measured timeline of the live Act 4b tree investigation: four level-1 sub-agents start together at 0 s, three level-2 sub-agents start together at 28 s, three level-3 sub-agents start together at 58 s.">
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      <line x1="90" y1="16" x2="90" y2="290" stroke="var(--line)"/>
+      <!-- scale: 0..80 s → 90..730 px, 8 px per s -->
+      <line x1="250" y1="16" x2="250" y2="290" stroke="var(--line)" stroke-dasharray="2 4"/><text x="250" y="306" text-anchor="middle">20 s</text>
+      <line x1="410" y1="16" x2="410" y2="290" stroke="var(--line)" stroke-dasharray="2 4"/><text x="410" y="306" text-anchor="middle">40 s</text>
+      <line x1="570" y1="16" x2="570" y2="290" stroke="var(--line)" stroke-dasharray="2 4"/><text x="570" y="306" text-anchor="middle">60 s</text>
+      <line x1="730" y1="16" x2="730" y2="290" stroke="var(--line)" stroke-dasharray="2 4"/><text x="730" y="306" text-anchor="middle">80 s</text>
+      <text x="90" y="306" text-anchor="middle">0</text>
+    </g>
+    <g font-family="var(--mono)" font-size="12" fill="currentColor" text-anchor="end">
+      <text x="82" y="34">H1</text><text x="82" y="60">H2</text><text x="82" y="86">H3</text><text x="82" y="112">H4</text>
+      <text x="82" y="142">H1.1</text><text x="82" y="168">H1.2</text><text x="82" y="194">H1.3</text>
+      <text x="82" y="224">H1.1.1</text><text x="82" y="250">H1.1.2</text><text x="82" y="276">H1.1.3</text>
+    </g>
+    <g>
+      <rect x="90" y="22" width="112" height="16" rx="3" fill="var(--good)"/>
+      <rect x="90" y="48" width="104" height="16" rx="3" fill="var(--bad)"/>
+      <rect x="90" y="74" width="120" height="16" rx="3" fill="var(--warn)"/>
+      <rect x="90" y="100" width="224" height="16" rx="3" fill="var(--bad)"/>
+      <rect x="314" y="130" width="240" height="16" rx="3" fill="var(--good)"/>
+      <rect x="314" y="156" width="136" height="16" rx="3" fill="var(--warn)"/>
+      <rect x="314" y="182" width="168" height="16" rx="3" fill="var(--bad)"/>
+      <rect x="554" y="212" width="120" height="16" rx="3" fill="var(--warn)"/>
+      <rect x="554" y="238" width="96" height="16" rx="3" fill="var(--warn)"/>
+      <rect x="554" y="264" width="112" height="16" rx="3" fill="var(--warn)"/>
+    </g>
+    <g font-family="var(--body)" font-size="12" fill="currentColor">
+      <rect x="440" y="22" width="10" height="10" fill="var(--good)"/><text x="456" y="31">validated</text>
+      <rect x="530" y="22" width="10" height="10" fill="var(--bad)"/><text x="546" y="31">ruled out</text>
+      <rect x="620" y="22" width="10" height="10" fill="var(--warn)"/><text x="636" y="31">inconclusive</text>
+    </g>
+  </svg>
+  <figcaption>Measured from the audit index, live Act 4b, 07:31Z. Each level's sub-agents start in the same second and run side by side; the next level starts when its parent is validated. The validated chain H1 → H1.1 followed the Act 7 leftover (schema-migration crash), which is why this run named the wrong cause.</figcaption>
+</figure>
+<div class="col">
+<p><b>Verdict.</b> The tree works as designed (parallel sub-agents, code checks, deeper branches) but did not beat the single loop: 7 of 9 offline against 9 of 9, wrong on the live trap where the loop was right, and about twice the cost and time. The freshness check trusts the time the sub-agent reports for "last seen"; the leftover crash errors fell inside its 5-minute window. <b>The single loop stays the default</b> in the container (<code>SRE_AGENT_METHOD=loop</code>); the tree stays available per call with <code>method="tree"</code>. Next step before trying again: measure "last seen" by code (a Splunk search per cited event), not from the sub-agent's answer.</p>
+</div>
+
+<h3>Test status</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Check</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Unit tests (staleness, corroboration, only validated branches deepened, budgets, routing)</td><td><span class="yes">130 of 130 pass</span>, 3 new</td></tr>
+    <tr><td>Container image <code>tuktukpay/sre-agent-aitk:2026-10-27c</code>, 2 API workers</td><td><span class="yes">running</span>, single loop by default</td></tr>
+    <tr><td>Offline eval: 9 recorded scenarios, single loop vs tree</td><td>single loop <span class="yes">9 / 9</span>, USD 1.98 · tree <span class="no">7 / 9</span>, USD 4.28 (Act 5 and Act 7 missed; the replay cannot answer the sub-agents' new questions, which penalises the tree)</td></tr>
+    <tr><td>Live trap test through the container: Act 7, 3 min baseline, Act 4b; loop and tree on the same incident at once</td><td>single loop <span class="yes">correct</span>, 90 s, USD 0.48 · tree <span class="no">wrong</span> (blamed the Act 7 leftover), 143 s, USD 0.90</td></tr>
+  </tbody>
+</table></div>
+
+<h2>What starts the agent</h2>
+<div class="col"><p>Two alerts can start an investigation. The detector alert reacts when an Observability Cloud detector crosses a fixed threshold. The ML anomaly alert uses three AI Toolkit <code>DensityFunction</code> models that learned normal behaviour per service from 330 quiet minutes, and fires on what is unusual for that service.</p></div>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 210" role="img" aria-label="ML anomaly pipeline: logs, APM error percent and APM latency are scored every two minutes by three DensityFunction models; a decision rule produces one row listing the flagged services, which starts the agent at most once per ten minutes.">
+    <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="10" y="20" width="170" height="40" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="95" y="45">error / warn logs</text>
+      <rect x="10" y="80" width="170" height="40" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="95" y="105">APM error %</text>
+      <rect x="10" y="140" width="170" height="40" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="95" y="165">APM p90 latency</text>
+      <rect x="240" y="60" width="190" height="80" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="335" y="88" font-weight="600">3 DensityFunction</text><text x="335" y="105">models, per service</text><text x="335" y="122" font-size="11">rarest 0.5 % = anomaly</text>
+      <rect x="490" y="60" width="200" height="80" rx="6" fill="var(--surface)" stroke="currentColor"/>
+      <text x="590" y="88" font-weight="600">Decision rule</text><text x="590" y="105" font-size="11.5">errors: 1 minute of 3</text><text x="590" y="122" font-size="11.5">latency: 2 minutes of 3</text>
+      <rect x="750" y="60" width="220" height="80" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="860" y="88" font-weight="600" fill="var(--accent)">One row → agent</text><text x="860" y="105" font-size="11.5">all flagged services + evidence</text><text x="860" y="122" font-size="11.5">at most once per 10 min</text>
+    </g>
+    <g stroke="currentColor" fill="none">
+      <path d="M180 40 L210 40 L210 90 L236 90" marker-end="url(#ar3)"/>
+      <line x1="180" y1="100" x2="236" y2="100" marker-end="url(#ar3)"/>
+      <path d="M180 160 L210 160 L210 110 L236 110" marker-end="url(#ar3)"/>
+      <line x1="430" y1="100" x2="486" y2="100" marker-end="url(#ar3)"/>
+      <line x1="690" y1="100" x2="746" y2="100" marker-end="url(#ar3)"/>
+    </g>
+    <text x="95" y="200" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">every 2 minutes</text>
+    <text x="210" y="200" text-anchor="middle" font-family="var(--mono)" font-size="10.5" fill="var(--muted)">| sim flow (metrics)</text>
+  </svg>
+  </div>
+  <figcaption>APM (Application Performance Monitoring) metrics reach Splunk through the Splunk Infrastructure Monitoring Add-on's <code>| sim flow</code> command, installed on 27 Oct. Replayed over 23 act starts: 18 found, mostly in the first minute; 4 false alarms in about 10 hours. Live Act 1: correct root cause.</figcaption>
+</figure>
+
+
+<h2 id="ml-detection">Anomaly detection that starts the agent: tested on every act</h2>
+<div class="col">
+<p>The alert "TukTukPay - ML anomaly runs TukTukPaySRE" scores every service every 2 minutes with AI Toolkit models and starts the agent when something is unusual. On 27–28 Oct it ran live through all 8 acts, then 8 model families were compared on the same recorded data inside the toolkit's own container image.</p>
+</div>
+
+<div class="tbl"><table>
+  <thead><tr><th>Act</th><th>1</th><th>2</th><th>3</th><th>4</th><th>4b</th><th>5</th><th>6</th><th>7</th></tr></thead>
+  <tbody>
+    <tr><td>ML alert flagged it</td><td colspan="8"><span class="yes">all 8, in the act's first minute</span></td></tr>
+    <tr><td>Observability Cloud detector fired after</td><td class="num">100 s</td><td class="num">111 s</td><td class="num">104 s</td><td class="num">181 s</td><td class="num">30 s</td><td class="num">84 s</td><td class="num">71 s</td><td class="num">24 s</td></tr>
+    <tr><td>Agent started after</td><td class="num">228 s</td><td class="num">679 s</td><td class="num">78 s</td><td class="num">586 s</td><td class="num">–</td><td class="num">230 s</td><td class="num">715 s</td><td class="num">115 s</td></tr>
+  </tbody>
+</table></div>
+<div class="note col"><b>Found in the live run.</b> Overnight on baseline (about 17 h) the alert misfired 3 times and started 4 agent runs: services whose normal is zero errors fire on a single warning, small latency blips count, and the throttle let a duplicate run through because it only sees finished runs. During acts the 10-minute throttle delayed the agent by up to 12 minutes.</div>
+
+<h3>Which models, and which combination</h3>
+<div class="col"><p>Every candidate was trained on the same clean minutes with the same false-alarm budget (99.5th percentile of its own scores), then scored on the 8 acts and 1,019 quiet minutes. Detection is easy here: all of them caught 8 of 8 in about 37 s. The difference is false alarms, and whether the alert names the right service.</p></div>
+<figure>
+  <svg viewBox="0 0 700 300" role="img" aria-label="False alarms per day by trigger: ECOD, COPOD and One-Class SVM 1.4; LOF 4.2; vote 3 of 5 5.7; kNN 7.1; HBOS 15.5; ECOD and Isolation Forest 17; per-signal thresholds like the live alert 24; Isolation Forest 36.7.">
+    <g font-family="var(--mono)" font-size="11" fill="var(--muted)">
+      <line x1="220" y1="10" x2="220" y2="262" stroke="var(--line)"/>
+      <!-- scale 0..40 per day → 220..680 px, 11.5 px per unit -->
+      <line x1="335" y1="10" x2="335" y2="262" stroke="var(--line)" stroke-dasharray="2 4"/><text x="335" y="278" text-anchor="middle">10</text>
+      <line x1="450" y1="10" x2="450" y2="262" stroke="var(--line)" stroke-dasharray="2 4"/><text x="450" y="278" text-anchor="middle">20</text>
+      <line x1="565" y1="10" x2="565" y2="262" stroke="var(--line)" stroke-dasharray="2 4"/><text x="565" y="278" text-anchor="middle">30</text>
+      <line x1="680" y1="10" x2="680" y2="262" stroke="var(--line)" stroke-dasharray="2 4"/><text x="680" y="278" text-anchor="middle">40</text>
+      <text x="220" y="278" text-anchor="middle">0</text>
+      <text x="450" y="296" text-anchor="middle">false alarms per day (lower is better)</text>
+    </g>
+    <g font-family="var(--body)" font-size="12" fill="currentColor" text-anchor="end">
+      <text x="212" y="27">ECOD (chosen)</text><text x="212" y="55">COPOD</text><text x="212" y="83">One-Class SVM</text><text x="212" y="111">LOF</text>
+      <text x="212" y="139">vote 3 of 5 models</text><text x="212" y="167">kNN</text><text x="212" y="195">HBOS</text><text x="212" y="223">per-signal (live alert)</text><text x="212" y="251">Isolation Forest</text>
+    </g>
+    <g>
+      <rect x="220" y="16" width="16" height="16" rx="3" fill="var(--accent)"/>
+      <rect x="220" y="44" width="16" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="72" width="16" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="100" width="48" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="128" width="66" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="156" width="82" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="184" width="178" height="16" rx="3" fill="var(--muted)"/>
+      <rect x="220" y="212" width="276" height="16" rx="3" fill="var(--bad)"/>
+      <rect x="220" y="240" width="422" height="16" rx="3" fill="var(--muted)"/>
+    </g>
+    <g font-family="var(--mono)" font-size="11" fill="currentColor">
+      <text x="242" y="28">1.4</text><text x="242" y="56">1.4</text><text x="242" y="84">1.4</text><text x="274" y="112">4.2</text><text x="292" y="140">5.7</text>
+      <text x="308" y="168">7.1</text><text x="404" y="196">15.5</text><text x="502" y="224">24.0</text><text x="648" y="252">36.7</text>
+    </g>
+  </svg>
+  <figcaption>All triggers detected 8 of 8 acts. Asking two models to agree, or voting, never got below ECOD alone. Isolation Forest drops to 1.4 per day if it must flag 2 minutes in a row, at the cost of about 1 minute more delay.</figcaption>
+</figure>
+
+<div class="two">
+<div>
+<h3>Finding the origin service</h3>
+<div class="tbl"><table>
+  <thead><tr><th>Ranker</th><th>Origin 1st</th><th>Top 3</th></tr></thead>
+  <tbody>
+    <tr><td><b>Call graph + ECOD score</b></td><td class="num"><span class="yes">6 / 8</span></td><td class="num">7 / 8</td></tr>
+    <tr><td>Call graph + Isolation Forest</td><td class="num">4 / 8</td><td class="num">6 / 8</td></tr>
+    <tr><td>Call graph + mean score</td><td class="num">3 / 8</td><td class="num">6 / 8</td></tr>
+    <tr><td>Any model's score alone</td><td class="num"><span class="no">1 / 8</span></td><td class="num">5–7 / 8</td></tr>
+  </tbody>
+</table></div>
+<p class="small">The biggest change is usually a caller (checkout-api, the storefront), not the cause. The call-graph ranker picks the deepest flagged service: one whose own callees are not flagged, the same caller → callee rule the agent uses. Misses: Act 4 (blocked agent mandates, no single origin) and Act 5 (ledger 2nd behind merchant-sim, which has its own fault in that act).</p>
+</div>
+<div>
+<h3>What ECOD is</h3>
+<p>Empirical-Cumulative-distribution-based Outlier Detection (PyOD). For each signal of a service it learns the normal distribution from quiet minutes, scores how far into the tail a new value is, and adds the surprise across signals. No parameters to tune, under a second to train, and it shows which signal drove the score. It judges signals independently and has no sense of time of day, so a longer baseline matters.</p>
+<p class="small">The toolkit's own DSDL notebooks are examples rather than detectors (one-feature ECOD with a broken reload; a random cut forest that always flags 1 %; an untuned autoencoder). The useful part is PyOD, scikit-learn and TensorFlow inside the same image.</p>
+</div>
+</div>
+
+<figure>
+  <div class="scroll">
+  <svg viewBox="0 0 980 170" role="img" aria-label="Planned pipeline: per-minute signals per service go to ECOD per service in a toolkit container module; the call graph ranks the flagged services; one alert with the likely origin and its driving signals starts the agent once per fault.">
+    <defs><marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="var(--body)" font-size="12.5" fill="currentColor" text-anchor="middle">
+      <rect x="10" y="40" width="170" height="80" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="95" y="66" font-weight="600">Signals per minute</text><text x="95" y="84" font-size="11">logs incl. critical, APM errors,</text><text x="95" y="98" font-size="11">p90, restarts, business ratios</text>
+      <rect x="215" y="40" width="170" height="80" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="300" y="66" font-weight="600" fill="var(--accent)">ECOD per service</text><text x="300" y="84" font-size="11">toolkit container module</text><text x="300" y="98" font-size="11">tuktuk_anomaly (planned)</text>
+      <rect x="420" y="40" width="170" height="80" rx="6" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="505" y="66" font-weight="600" fill="var(--accent)">Call-graph ranker</text><text x="505" y="84" font-size="11">deepest flagged service</text><text x="505" y="98" font-size="11">= likely origin</text>
+      <rect x="625" y="40" width="160" height="80" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="705" y="66" font-weight="600">One alert per fault</text><text x="705" y="84" font-size="11">origin + driving signals,</text><text x="705" y="98" font-size="11">fixed throttle</text>
+      <rect x="820" y="40" width="150" height="80" rx="6" fill="var(--surface)" stroke="currentColor"/><text x="895" y="66" font-weight="600">SRE agent</text><text x="895" y="84" font-size="11">investigates from the</text><text x="895" y="98" font-size="11">likely origin first</text>
+    </g>
+    <g stroke="currentColor"><line x1="180" y1="80" x2="211" y2="80" marker-end="url(#ar7)"/><line x1="385" y1="80" x2="416" y2="80" marker-end="url(#ar7)"/><line x1="590" y1="80" x2="621" y2="80" marker-end="url(#ar7)"/><line x1="785" y1="80" x2="816" y2="80" marker-end="url(#ar7)"/></g>
+  </svg>
+  </div>
+  <figcaption>Planned next version of the alert. Caveats on the numbers: 84 clean training minutes, loud simulated faults, one run per act.</figcaption>
+</figure>
+
+<h2 id="sre-app">TukTukPay SRE Agent app in Splunk</h2>
+<div class="col">
+<p>Our container agent's investigations are not in Launchpad's run history, so a Splunk app shows them, read live from <code>index=tuktukpay_agent_audit</code>: a fleet strip, the case list, a conclusion card (root cause, impact, recommended action waiting for approval, confidence band with its basis, tokens and cost), and tabs for the hypothesis tree (tree on the left, the selected hypothesis on the right: what the sub-agent said, what code decided, evidence with links to Splunk and Observability Cloud, what was checked), the sub-agent timeline, evidence, the agent trace and the narrative. Version 1.3.0, at <code>/en-US/app/tuktukpay_sre_agent/cases</code> on the EC2 Splunk. The workshop guest <code>tuktuk_guest</code> can read it, limited to the event types the app uses.</p>
+</div>
+
+<h2>Recommendation</h2>
+<div class="col">
+<ol>
+  <li><b>Production path: option C.</b> Run the SRE agent in the toolkit container and start it from the ML anomaly alert and the detector alert with <code>| fit AITKContainer</code> / <code>| apply tuktuk_sre</code>. It is the only option that runs Claude 5.5 with thinking and keeps our approval rules, budgets and evidence check. Write its answers to an index so a dashboard shows them.</li>
+  <li><b>Workshop story: show A and C together.</b> Launchpad with Claude Sonnet 4.5 and the checklist instructions is the product as the customer would get it; the container agent shows how far a customer can take it with their own agent, model and governance, still started from Splunk.</li>
+  <li><b>Keep the checklist instructions in Launchpad.</b> The tree did not beat them there and failed once on stale evidence. The code-checked tree with parallel sub-agents is now built into our agent (see <a href="#subagents">Sub-agent hypothesis tree</a>); tested on 27 Oct, it was less accurate than the single loop (7/9 offline, wrong on the Act 7 → 4b trap) at twice the cost, so the single loop stays the default. Retry only after "last seen" is measured by code.</li>
+  <li><b>Drop option B for now.</b> Revisit only if Splunk confirms custom LLM connections for Launchpad agents; it would also need a public endpoint restricted to the runtime's address.</li>
+  <li><b>Detection:</b> replace the per-signal alert with ECOD per service plus the call-graph ranker, as a toolkit container module; retrain on the clean overnight hours; fix the throttle (marker at start, per fault) and require a minimum size before alerting. Re-run all acts before keeping it.</li>
+  <li><b>Report to the AI Toolkit team:</b> the runtime's fixed <code>thinking: disabled</code> blocks current Claude models; the "Run AI Agent" alert action never passes alert fields to the agent.</li>
+</ol>
+</div>
+
+<h2>What runs where now</h2>
+<div class="tbl"><table>
+  <thead><tr><th>Piece</th><th>Where</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td>Docker 25</td><td>EC2 Splunk, API on <code>127.0.0.1:2375</code></td><td>running, localhost only</td></tr>
+    <tr><td>Container <code>tuktuk-sre</code></td><td>EC2, <code>127.0.0.1:5000</code>, image <code>2026-10-27c</code></td><td>running, single loop by default (<code>method="tree"</code> per call), 2 API workers</td></tr>
+    <tr><td>Splunk app <b>TukTukPay SRE Agent</b> 1.3.0</td><td>EC2 Splunk, <code>/app/tuktukpay_sre_agent/cases</code></td><td>installed: investigations, hypothesis tree, timeline, evidence, agent trace</td></tr>
+    <tr><td>Container <code>llmgw</code> (LiteLLM)</td><td>EC2, <code>127.0.0.1:8443</code></td><td>running, not reachable from outside</td></tr>
+    <tr><td>Launchpad agents</td><td><code>TukTukPaySRE</code> (GPT-OSS), <code>TukTukPaySREClaude</code> (tree), <code>TukTukPaySREClaudeChecklist</code></td><td>available</td></tr>
+    <tr><td>ML anomaly alert</td><td>saved search, Splunk_ML_Toolkit app</td><td>paused during tests</td></tr>
+  </tbody>
+</table></div>
+
+<h2>Abbreviations</h2>
+<dl class="glossary col">
+  <dt>AITK</dt><dd>AI (artificial intelligence) Toolkit, Splunk's machine learning and agent app</dd>
+  <dt>DSDL</dt><dd>Data Science and Deep Learning, the toolkit's container framework</dd>
+  <dt>MCP</dt><dd>Model Context Protocol, how the agent calls tools</dd>
+  <dt>O11y</dt><dd>Splunk Observability Cloud</dd>
+  <dt>HEC</dt><dd>HTTP (Hypertext Transfer Protocol) Event Collector</dd>
+  <dt>SPL</dt><dd>Search Processing Language</dd>
+  <dt>BIN</dt><dd>Bank Identification Number, the first digits of a card number</dd>
+  <dt>THB</dt><dd>Thai baht</dd>
+</dl>
+<p class="small col">All latencies, outages and payments are simulated (TukTukPay workshop kit). Results from live runs on 27 Oct 2026, EKS (Amazon Elastic Kubernetes Service) cluster tuktukpay-eks and the EC2 Splunk 10.6.</p>
+</div>

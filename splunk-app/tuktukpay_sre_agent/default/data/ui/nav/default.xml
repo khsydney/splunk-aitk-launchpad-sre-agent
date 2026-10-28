@@ -1,0 +1,4 @@
+<nav search_view="search" color="#0b1a22">
+  <view name="cases" default="true"/>
+  <view name="search"/>
+</nav>

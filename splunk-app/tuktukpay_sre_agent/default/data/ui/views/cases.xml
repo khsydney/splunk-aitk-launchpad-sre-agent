@@ -1,0 +1,10 @@
+<dashboard version="1.1" theme="dark" script="sre.js" stylesheet="sre.css" hideEdit="true" hideTitle="true" hideExport="true" hideFilters="true">
+  <label>Agent cases</label>
+  <row>
+    <panel>
+      <html>
+        <div id="sre-root"></div>
+      </html>
+    </panel>
+  </row>
+</dashboard>
